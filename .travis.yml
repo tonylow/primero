@@ -16,12 +16,13 @@ before_script:
 - cp config/travis/sunspot.yml config/
 - cp config/travis/mailers.yml config/
 script:
-- bundle exec rake sunspot:solr:start
+- RAILS_ENV=test bundle exec rake sunspot:solr:start
 - bundle exec rspec spec
 services:
 - couchdb
 branches:
 - travisci
+- travisci_1.6
 - maint_1.3
 - maint_1.4
 - maint_1.5
