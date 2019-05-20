@@ -6,6 +6,7 @@ BUILD_NGINX="docker build -f nginx/Dockerfile . -t nginx:prim-latest"
 BUILD_BEANSTALK="docker build -f beanstalkd/Dockerfile . -t beanstalkd:prim-latest"
 BUILD_SOLR="docker build -f solr/Dockerfile ../ -t solr:prim-latest"
 BUILD_APP="docker build -f application/Dockerfile ../ -t application:prim-latest"
+BUILD_DEV="docker build -f development/Dockerfile ../ -t development:prim-latest"
 BUILD_POSTGRES="docker build -f postgres/Dockerfile . -t postgres:prim-latest"
 
 # if no params are set then set $1 to all
@@ -34,6 +35,21 @@ case $1 in
     ;;
   all)
     eval "$BUILD_APP"
+    eval "$BUILD_DEV"
+    eval "$BUILD_SOLR"
+    eval "$BUILD_BEANSTALK"
+    eval "$BUILD_NGINX"
+    eval "$BUILD_POSTGRES"
+    ;;
+  prod)
+    eval "$BUILD_APP"
+    eval "$BUILD_SOLR"
+    eval "$BUILD_BEANSTALK"
+    eval "$BUILD_NGINX"
+    eval "$BUILD_POSTGRES"
+    ;;
+  dev)
+    eval "$BUILD_DEV"
     eval "$BUILD_SOLR"
     eval "$BUILD_BEANSTALK"
     eval "$BUILD_NGINX"

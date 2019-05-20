@@ -1,4 +1,3 @@
-
 # Primero Docker
 
 ## Overview
@@ -6,6 +5,23 @@
 Docker for Primero consists of the following containers: application,
 beanstalkd, Nginx, Postgres, and solr. It is compatible with MacOS and modern
 Linux distributions.
+
+An overview of the steps required to setup Primero is as follows:
+1. Install Docker and Python3
+2. Create a virtualenv in the root primero folder `venv`
+3. Install the docker and docker-compose pip packages
+4. Build with `./build dev`
+5. Start container with `./compose.dev.sh up` and then stop it with Control-C
+6. Modify configuration files in config dir
+7.a. To run primero/puma in the background run `./compose.dev.sh up -d`
+7.b. To run the container and enter bash, not automatically starting primero,
+run `./helper run`
+7.c. To enter a running container, use `./helper enter`
+
+Note: you can pass arguments with enter or run on the help script like:
+`./helper.sh run echo test`
+This will override the default bash shell and run 'echo test' instead.
+
 
 ## Installing Docker and Docker-Compose on Linux
 
@@ -50,6 +66,39 @@ local.env.
 
 Start by looking at the defaults.env file to get a look at which env options can
 be modified.
+
+### Configuration - Production
+
+To configure for production, simply look at the defaults.env file and override
+any settings you wish to change. Otherwise, you can simply run the production
+container with the default settings.
+
+### Configuration - Development
+
+Currently, the dev container settings are not templatized. To create configs for
+development, you will need two environments setup in your config files. These
+are 'development' and 'testing' respectively.
+
+
+Primero ships with a default set of configurations for development. If you are
+missing any of the configuration files in the config directory, the dev
+container will automatically copy the appropriate file into place. Once the
+files are copied into place, they will show up in the config directory as
+example.yml file. You can change these files as the container will not overwrite
+them.
+
+Alternatively, you can create the config files manually as shown below:
+
+Create a set of config files by using the following command:
+`./generate_dev_config.sh`
+
+This will produce a set of config files with the development environment
+configured. To create the testing environment, within each yml file, duplicate
+the dev config as the testing environment and make the appropriate changes for
+testing.
+
+Look at the config/examples folder to see an example of working dev config
+files.
 
 ## Folder Structure
 

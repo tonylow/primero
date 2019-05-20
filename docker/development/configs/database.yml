@@ -1,0 +1,14 @@
+development:
+  adapter: postgresql
+  database: primero_development
+  username: primero
+  password: primero
+  host: postgres
+  pool: 10
+testing:
+  adapter: postgresql
+  database: primero_development
+  username: primero
+  password: primero
+  host: postgres
+  pool: 10

@@ -1,0 +1,52 @@
+---
+version: '3'
+services:
+  development:
+    image: development:prim-latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - solr
+      - beanstalkd
+      - postgres
+    volumes:
+      - log:/srv/primero/application/log
+      - public:/srv/primero/application/public
+      - tmp:/srv/primero/application/tmp
+      - ./:/srv/primero/application
+      - ./tmp/bundle:/usr/local/bundle
+    env_file:
+      - docker/defaults.env
+      - docker/dev.env
+    stdin_open: true
+    tty: true
+  # nginx:
+  #   image: nginx:prim-latest
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - local_certs:/etc/certs
+  #     - tmp:/srv/primero/application/tmp
+  #     - log:/var/log/nginx
+  #     - public:/srv/primero/application/public
+  #   env_file:
+  #     - docker/defaults.env
+  #     - docker/dev.env
+  #     - docker/quoin.env
+  #   depends_on:
+  #     - development
+  solr:
+    env_file:
+      - docker/defaults.env
+      - docker/dev.env
+  beanstalkd:
+    env_file:
+      - docker/defaults.env
+      - docker/dev.env
+  postgres:
+    env_file:
+      - docker/defaults.env
+      - docker/dev.env
+volumes:
+  bundle:

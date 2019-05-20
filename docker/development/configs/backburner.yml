@@ -1,0 +1,4 @@
+development:
+  beanstalk_url: "beanstalk://beanstalk:11300"
+testing:
+  beanstalk_url: "beanstalk://beanstalk:11300"

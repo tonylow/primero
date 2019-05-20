@@ -40,6 +40,6 @@ do
   PRIM_NEW_FILENAME=$(prim_rename_file "${PRIM_FILENAME}")
   # If the filename has a .template extension, then we are going to copy it to
   # the same name / path without .template to avoid overwriting our template
-  prim_perform_substitution
+  (prim_perform_substitution)
 done
 set -ex

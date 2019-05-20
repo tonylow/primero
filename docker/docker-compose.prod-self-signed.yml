@@ -13,8 +13,8 @@ services:
       - tmp:/srv/primero/application/tmp
     env_file:
       - docker/defaults.env
-      - docker/production.env
       - docker/quoin.env
+      - docker/local.env
     stdin_open: true
     tty: true
   nginx:
@@ -24,29 +24,27 @@ services:
       - "443:443"
     volumes:
       - local_certs:/etc/certs
-      - certbot_var:/var/lib/letsencrypt
-      - certbot_etc:/etc/letsencrypt
-      - tmp:/srv/primero/tmp
+      - tmp:/srv/primero/application/tmp
       - log:/var/log/nginx
       - public:/srv/primero/application/public
     env_file:
       - docker/defaults.env
-      - docker/production.env
+      - docker/local.env
       - docker/quoin.env
     depends_on:
       - application
   solr:
     env_file:
       - docker/defaults.env
-      - docker/production.env
+      - docker/local.env
       - docker/quoin.env
   beanstalkd:
     env_file:
       - docker/defaults.env
-      - docker/production.env
+      - docker/local.env
       - docker/quoin.env
   postgres:
     env_file:
       - docker/defaults.env
-      - docker/production.env
+      - docker/local.env
       - docker/quoin.env

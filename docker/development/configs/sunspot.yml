@@ -1,0 +1,16 @@
+development:
+  solr:
+    hostname: solr
+    port: 8983
+    log_level: ERROR
+    pid_dir: /srv/primero/application/tmp
+    path: /solr/primero
+    log_file: log
+testing:
+  solr:
+    hostname: solr
+    port: 8983
+    log_level: ERROR
+    path: /solr/primero
+    log_file: log
+    pid_dir: /srv/primero/application/tmp

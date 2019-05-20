@@ -27,7 +27,6 @@ RUN set -euox pipefail \
             bundle install \
         ; fi
 
-
 # Note: This has its build context set to the root dir so prepend 'docker' to
 # items that need to be copied from that directory
 #
@@ -36,7 +35,7 @@ COPY [ "docker/sub.sh", "docker/application/root/", "/" ]
 # Now copy over primero and do setup
 COPY [ ".", "/srv/primero/application" ]
 # Copying in the void configs for the asset precompilation step
-COPY [ "docker/application/null_configs/*", "/srv/primero/application/config/" ]
+COPY [ "docker/app_common/null_configs/*", "/srv/primero/application/config/" ]
 
 # Create the directories for primero and install yarn for the asset precompile
 RUN set -euox pipefail \
