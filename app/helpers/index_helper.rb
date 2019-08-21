@@ -36,6 +36,8 @@ module IndexHelper
         list_view_header_bulk_export
       when "task"
         list_view_header_task
+      when "audit_log"
+        list_view_audit_log
       else
         []
     end
@@ -141,20 +143,16 @@ module IndexHelper
     end
   end
 
-  def build_filter_multi_select(title, filter, items)
+  def build_filter_select(title, filter, items, multi_select = true)
     if items.present? && items.first.is_a?(Hash)
       items = items.map{|item| [item['display_text'], item['id']]}
     end
 
     content_tag :div, class: 'filter' do
       concat(content_tag(:h3, title))
-      concat(select_tag filter,
-        options_for_select(items),
-        'class' => 'chosen-select',
-        'filter_type' => 'list',
-        'multiple' => true,
-        'data-placeholder' => t("fields.select_box_empty_item"), :id => filter
-        )
+      concat(select_tag filter, options_for_select(items), class: 'chosen-select', filter_type: 'list',
+                        multiple: multi_select, include_blank: t("fields.select_box_empty_item"),
+                        'data-placeholder' => t("fields.select_box_empty_item"), id: filter)
       concat(content_tag(:div, '', class: 'clearfix'))
     end
   end
@@ -243,6 +241,7 @@ module IndexHelper
     header_list << {title: 'social_worker', sort_title: 'owned_by'} if @is_manager && !@id_search.present?
     header_list << {title: 'owned_by', sort_title: 'owned_by'} if @is_cp && @id_search.present?
     header_list << {title: 'owned_by_agency', sort_title: 'owned_by_agency'} if @is_cp && @id_search.present?
+    header_list << {title: '', sort_title: 'view'} if @id_search.present? && @can_display_view_page
 
     return header_list
   end
@@ -311,10 +310,48 @@ module IndexHelper
     ]
   end
 
+  def list_view_audit_log
+    [
+      {title: 'timestamp', sort_title: 'timestamp'},
+      {title: 'user_name', sort_title: 'user_name'},
+      {title: 'action', sort_title: 'action_name'},
+      {title: 'description', sort_title: 'description'},
+      {title: 'record_owner', sort_title: 'record_owner'}
+    ]
+  end
+
+  def audit_log_description(record)
+    record.display_id.present? ? audit_log_description_with_id(record.record_type, record.display_id) : record.record_type
+  end
+
+  def audit_log_description_with_id(record_type, display_id)
+    if display_id.is_a?(Array)
+      content_tag(:ul) do
+        concat(content_tag(:lh, record_type.pluralize))
+        display_id.each {|id| concat(content_tag(:li, "'#{id}'"))}
+      end
+    else
+      "#{record_type} '#{display_id}'"
+    end
+  end
+
+  def audit_log_owner(owned_by)
+    if owned_by.is_a?(Array)
+      content_tag(:ul) do
+        #Blank header to align with ID's in the description  -- TODO Is this necessary?
+        concat(content_tag(:lh, ''))
+        owned_by.each {|owner| concat(content_tag(:li, owner))}
+      end
+    else
+      owned_by
+    end
+  end
+
   def index_filters_case
     filters = []
     #get the id's of the forms sections the user is able to view/edit.
     allowed_form_ids = @current_user.modules.map{|m| FormSection.get_allowed_form_ids(m, @current_user)}.flatten
+    display_workflow_filter = @current_user.modules.any?{|m| m.workflow_status_indicator.present?}
     #Retrieve the forms where the fields appears and if is in the allowed for the user.
     #TODO should look on subforms? for now lookup on top forms.
     field_names = ["gbv_displacement_status", "protection_status", "urgent_protection_concern", "protection_concerns", "type_of_risk"]
@@ -325,7 +362,7 @@ module IndexHelper
     filters << "Mobile" if @can_sync_mobile
     filters << "Social Worker" if @is_manager
     filters << "My Cases"
-    filters << "Workflow"
+    filters << "Workflow" if display_workflow_filter
     filters << "Approvals" if @can_approvals && (allowed_form_ids.any?{|fs_id| ["cp_case_plan", "closure_form", "cp_bia_form"].include?(fs_id) })
     #Check independently the checkboxes on the view.
     filters << "cp_bia_form" if allowed_form_ids.include?("cp_bia_form") && @can_approval_bia
@@ -349,6 +386,8 @@ module IndexHelper
     filters << "Type of Risk" if @is_cp && visible_filter_field?("type_of_risk", forms)
     filters << "Risk Level" if @is_cp
     filters << "Current Location" if @is_cp
+    filters << "Agency Office" if @is_gbv
+    filters << "User Group" if @is_gbv && @current_user.present? && @current_user.has_user_group_filter?
     filters << "Reporting Location" if @can_view_reporting_filter
     filters << "Dates" if @is_cp
     filters << "Case Open Date" if @is_gbv
@@ -367,13 +406,14 @@ module IndexHelper
     filters << "Violation" if @is_mrm
     filters << "Violence Type" if @is_gbv
     filters << "Social Worker" if @is_manager
+    filters << "Agency Office" if @is_gbv
+    filters << "User Group" if @is_gbv && @current_user.present? && @current_user.has_user_group_filter?
     filters << "Status"
     filters << "Age Range"
     filters << "Children" if @is_mrm
     filters << "Verification Status" if @is_mrm
     filters << "Incident Location"
-    filters << "Interview Date" if @is_gbv
-    filters << "Incident Date"
+    filters << "Dates"
     filters << "Protection Status" if @is_gbv
     filters << "Armed Force or Group" if @is_mrm
     filters << "Armed Force or Group Type" if @is_mrm
@@ -386,7 +426,7 @@ module IndexHelper
     filters = []
     filters << "Flagged"
     filters << "Field/Case/Social Worker" if @is_manager
-    filters << "Date of Inquiry"
+    filters << "Dates"
     filters << "Inquiry Status"
     filters << "Separation Location"
     filters << "Separation Cause"
@@ -406,13 +446,39 @@ module IndexHelper
     return filters
   end
 
-  def selectable_filter_date_options
+  def selectable_filter_date_options(record)
+    case record
+      when "cases"
+        selectable_filter_date_options_case
+      when "incidents"
+        selectable_filter_date_options_incident
+      when "tracing_requests"
+        selectable_filter_date_options_tracing_request
+      else
+        []
+    end
+  end
+
+  def selectable_filter_date_options_case
     options = []
     options << [t('children.selectable_date_options.registration_date'), 'registration_date']
     options << [t('children.selectable_date_options.assessment_requested_on'), 'assessment_requested_on']
     options << [t('children.selectable_date_options.date_case_plan_initiated'), 'date_case_plan']
     options << [t('children.selectable_date_options.closure_approved_date'), 'date_closure']
     options << [t('children.selectable_date_options.created_at'), 'created_at'] if @is_gbv
+    return options
+  end
+
+  def selectable_filter_date_options_incident
+    options = []
+    options << [t('incidents.selectable_date_options.date_of_first_report'), 'date_of_first_report'] if @is_gbv
+    options << [t('incidents.selectable_date_options.incident_date_derived'), 'incident_date_derived']
+    return options
+  end
+
+  def selectable_filter_date_options_tracing_request
+    options = []
+    options << [t('tracing_requests.selectable_date_options.inquiry_date'), 'inquiry_date']
     return options
   end
 
@@ -475,5 +541,33 @@ module IndexHelper
       'edit',
     ]
     actions.any?{ |p| can?(p.to_sym, model) }
+  end
+
+  def view_data(record, form_sections)
+    data = [{ display_name: t('child.id'), value: record.short_id }]
+
+    included_fields = [
+      'owned_by',
+      'record-owner',
+      'owned_by_agency',
+      'clan_tribe'
+    ]
+
+    rejected_fields_types = [
+      'photo_upload_box',
+      'audio_upload_box'
+    ]
+
+    form_sections.each do |n, fs|
+      fs.each do |form|
+        fields =   form.fields.select{ |field| field.show_on_minify_form || included_fields.include?(field.name) }
+                       .reject{ |field|  rejected_fields_types.include? field.type }
+        fields.each do |f|
+          data << { display_name: f.display_name, value: field_value_for_display(record[f.name], f, @lookups) }
+        end
+      end
+    end
+
+    data
   end
 end

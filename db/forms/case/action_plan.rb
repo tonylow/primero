@@ -1,130 +1,147 @@
 gbv_follow_up_subform_fields = [
-  Field.new({"name" => "followup_service_type",
+  Field.new({"name" => "service_type_provided",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "select_box",
-             "display_name_all" => "Type of service",
-             "option_strings_text_all" =>
-                           ["Safehouse Service",
-                            "Health/Medical Service",
-                            "Psychosocial Service",
-                            "Police/Other Service",
-                            "Legal Assistance Service",
-                            "Livelihoods Service",
-                            "Child Protection Service",
-                            "Family Mediation Service",
-                            "Family Reunification Service",
-                            "Education Service",
-                            "NFI/Clothes/Shoes Service",
-                            "Water/Sanitation Service",
-                            "Registration Service",
-                            "Food Service",
-                            "Other Service"].join("\n")
+             "display_name_en" => "Type of service provided by me/my organization",
+             "option_strings_source" => "lookup lookup-service-type"
             }),
   Field.new({"name" => "followup_date",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "date_field",
-             "display_name_all" => "Follow up date"
+             "display_name_en" => "Follow up date"
+            }),
+  Field.new({"name" => "followup_service_type",
+             "show_on_minify_form" => true,
+             "mobile_visible" => true,
+             "type" => "select_box",
+             "display_name_en" => "Type of referral service",
+             "option_strings_source" => "lookup lookup-service-type"
             }),
   Field.new({"name" => "action_taken_already",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Has action been taken?",
+             "display_name_en" => "Has action been taken?",
              "option_strings_source" => "lookup lookup-yes-no"
             }),
   Field.new({"name" => "action_taken_details",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Details about action taken"
+             "type" => "textarea",
+             "display_name_en" => "Details about action taken"
+            }),
+  Field.new({"name" => "service_provided_date",
+             "type" => "date_field",
+             "display_name_en" => "If yes, when was the service provided?"
             }),
   Field.new({"name" => "need_follow_up_visit",
-             "mobile_visible" => false,
              "type" => "radio_button",
-             "display_name_all" => "Is there a need for further follow up visits?",
+             "display_name_en" => "Is there a need for further follow up visits?",
              "option_strings_source" => "lookup lookup-yes-no"
             }),
   Field.new({"name" => "when_follow_up_visit_should_happen",
-             "mobile_visible" => false,
              "type" => "date_field",
-             "display_name_all" => "If yes, when do you recommend the next visit to take place?"
+             "display_name_en" => "If yes, when do you recommend the next visit to take place?"
+            }),
+  Field.new({"name" => "follow_up_comments",
+             "type" => "textarea",
+             "display_name_en" => "Comments"
+            }),
+  Field.new({"name" => "follow_up_survivor_share_needs",
+             "type" => "radio_button",
+             "display_name_en" => "Did the survivor share any new needs or concerns during the follow up appointment?",
+             "option_strings_source" => "lookup lookup-yes-no",
+             "help_text_en" => "If yes, please describe the needs and revise the Case Action Plan section accordingly"
+            }),
+  Field.new({"name" => "survivor_needs_met",
+             "type" => "radio_button",
+             "display_name_en" => "Did the action(s) taken meet the survivor's needs?",
+             "option_strings_source" => "lookup lookup-yes-no",
+             "help_text_en" => "If not, please update the Case Action Plan section accordingly to address the need(s)"
+            }),
+  Field.new({"name" => "referred_for_another_appointment",
+             "type" => "select_box",
+             "display_name_en" => "If not, did you refer the survivor for another appointment?",
+             "option_strings_source" => "lookup lookup-service-referred"
             }),
   Field.new({"name" => "recommend_case_closed",
              "mobile_visible" => false,
              "type" => "radio_button",
-             "display_name_all" => "If not, do you recommend that the case be closed?",
+             "display_name_en" => "If needs are met, do you recommend that the case be closed?",
              "option_strings_source" => "lookup lookup-yes-no"
             }),
-  Field.new({"name" => "followup_comments",
+  Field.new({"name" => "case_action_plan_implementation_timing",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Comments"
+             "show_on_minify_form" => true,
+             "type" => "select_box",
+             "display_name_en" => "How long did it take you to implement the Case Action Plan for this incident?",
+             "option_strings_source" => "lookup lookup-assessment-duration"
             }),
   Field.new({"name" => "progress_made_towards_goals",
              "mobile_visible" => true,
              "type" => "separator",
-             "display_name_all" => "Progress made towards GOALS",
-             "help_text_all" => "Evaluate Progress Made Towards GOALS agreed on in Survivor Assessment & Case Action Plan"
+             "display_name_en" => "Progress made towards GOALS",
+             "help_text_en" => "Evaluate Progress Made Towards GOALS agreed on in Survivor Assessment & Case Action Plan"
             }),
   Field.new({"name" => "gbv_assessment_progress_safety",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Progress towards Safety goals",
-             "option_strings_text_all" => "N/A\nin progress\nmet"
+             "display_name_en" => "Progress towards Safety goals",
+             "option_strings_source" => "lookup lookup-assessment-progress"
             }),
   Field.new({"name" => "gbv_assessment_progress_safety_text",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Explain Progress towards Safety goals"
+             "type" => "textarea",
+             "display_name_en" => "Explain Progress towards Safety goals"
             }),
   Field.new({"name" => "gbv_assessment_progress_health",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Progress towards Heath care goals",
-             "option_strings_text_all" => "N/A\nin progress\nmet"
+             "display_name_en" => "Progress towards Heath care goals",
+             "option_strings_source" => "lookup lookup-assessment-progress"
             }),
   Field.new({"name" => "gbv_assessment_progress_health_text",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Explain Progress towards Heath care goals"
+             "type" => "textarea",
+             "display_name_en" => "Explain Progress towards Heath care goals"
             }),
   Field.new({"name" => "gbv_assessment_progress_psychosocial",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Progress towards Psychosocial Support goals",
-             "option_strings_text_all" => "N/A\nin progress\nmet"
+             "display_name_en" => "Progress towards Psychosocial Support goals",
+             "option_strings_source" => "lookup lookup-assessment-progress"
             }),
   Field.new({"name" => "gbv_assessment_progress_psychosocial_text",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Explain Progress towards Psychosocial Support goals"
+             "type" => "textarea",
+             "display_name_en" => "Explain Progress towards Psychosocial Support goals"
             }),
   Field.new({"name" => "gbv_assessment_progress_justice",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Progress towards Access to Justice goals",
-             "option_strings_text_all" => "N/A\nin progress\nmet"
+             "display_name_en" => "Progress towards Justice/legal goals",
+             "option_strings_source" => "lookup lookup-assessment-progress"
             }),
   Field.new({"name" => "gbv_assessment_progress_justice_text",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Explain Progress towards Access to Justice goals"
+             "type" => "textarea",
+             "display_name_en" => "Explain Progress towards Access to Justice/legal goals"
             }),
   Field.new({"name" => "gbv_assessment_other_goals_list",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Other goals (list here)"
+             "type" => "textarea",
+             "display_name_en" => "Other goals (list here)"
             }),
   Field.new({"name" => "gbv_assessment_other_goals",
              "mobile_visible" => true,
              "type" => "radio_button",
-             "display_name_all" => "Progress towards other goals",
-             "option_strings_text_all" => "N/A\nin progress\nmet"
+             "display_name_en" => "Progress towards other goals",
+             "option_strings_source" => "lookup lookup-assessment-progress"
             }),
   Field.new({"name" => "gbv_assessment_other_goals_text",
              "mobile_visible" => true,
-             "type" => "text_field",
-             "display_name_all" => "Explain Progress towards other goals"
+             "type" => "textarea",
+             "display_name_en" => "Explain Progress towards other goals"
             })
 ]
 
@@ -134,74 +151,79 @@ action_plan_subform_fields = [
     "show_on_minify_form" => true,
     "mobile_visible" => true,
     "type" => "textarea",
-    "display_name_all" => "Describe the action plan to address this need."
+    "display_name_en" => "Describe the action plan to address this need."
   }),
   Field.new({
     "name" => "service_type",
     "mobile_visible" => true,
     "type" => "select_box",
-    "display_name_all" => "Type of Need",
-    "option_strings_text_all" => [
-      "Safehouse",
-      "Health/Medical",
-      "Psycosocial/Counseling",
-      "Legal Assistance",
-      "Police or Other Type of Security",
-      "Livelihoods",
-      "Child Protection",
-      "Family Mediation",
-      "Family Reunification",
-      "Education",
-      "NFI/Clothes/Shoes",
-      "Water/Sanitation",
-      "Refugee Registration",
-      "Food",
-      "Other"
-    ].join("\n")
+    "display_name_en" => "Type of Need",
+    "option_strings_source" => "lookup lookup-service-type"
   }),
   Field.new({
     "name" => "service_referral",
     "mobile_visible" => true,
     "type" => "select_box",
-    "display_name_all" => "Did you refer the client for this service?",
-    "option_strings_text_all" => [
-      "Referred",
-      "No referral, Service provided by your agency",
-      "No referral, Services already received from another agency",
-      "No referral, Service not applicable",
-      "No referral, Declined by survivor",
-      "No referral, Service unavailable"
-    ].join("\n")
+    "display_name_en" => "When appropriate, did you refer the survivor for this service?",
+    "option_strings_source" => "lookup lookup-service-referred-gbv"
+  }),
+  Field.new({
+      "name" => "service_referral_written_consent",
+      "mobile_visible" => true,
+      "show_on_minify_form" => true,
+      "type" => "radio_button",
+      "display_name_en" => "Did you receive written consent from survivor to release personal Information for the purpose of referrals?",
+      "option_strings_source" => "lookup lookup-yes-no"
   }),
   Field.new({
     "name" => "service_appointment_date",
     "mobile_visible" => true,
     "type" => "date_field",
-    "display_name_all" => "Appointment Date"
+    "display_name_en" => "Appointment Date"
   }),
   Field.new({
     "name" => "service_appointment_time",
     "mobile_visible" => false,
     "type" => "text_field",
-    "display_name_all" => "Appointment Time"
+    "display_name_en" => "Appointment Time"
   }),
   Field.new({
     "name" => "service_provider",
     "mobile_visible" => true,
     "type" => "text_field",
-    "display_name_all" => "Service Provider"
+    "display_name_en" => "Service Provider"
   }),
   Field.new({
     "name" => "service_location",
     "mobile_visible" => false,
     "type" => "text_field",
-    "display_name_all" => "Service Location"
+    "display_name_en" => "Service Location"
   }),
   Field.new({
     "name" => "service_referral_notes",
     "mobile_visible" => false,
-    "type" => "text_field",
-    "display_name_all" => "Notes"
+    "type" => "textarea",
+    "display_name_en" => "Notes"
+  }),
+  Field.new({
+    "name" => "service_referral_mandatory_reporting",
+    "type" => "radio_button",
+    "display_name_en" => "If mandatory reporting laws apply, did you report the incident to the police/public authorities?",
+    "option_strings_source" => "lookup lookup-yes-no"
+  }),
+  Field.new({
+    "name" => "service_referral_mandatory_reporting_inform_survivor",
+    "type" => "radio_button",
+    "display_name_en" => "If yes, did you inform the survivor and/or her caregiver of the mandatory reporting laws prior to making the report?",
+    "option_strings_source" => "lookup lookup-yes-no"
+  }),
+  Field.new({
+    "name" => "service_referral_case_action_plan_timing",
+    "mobile_visible" => true,
+    "show_on_minify_form" => true,
+    "type" => "select_box",
+    "display_name_en" => "How long did it take you to develop the Case Action Plan with the survivor for this case?",
+    "option_strings_source" => "lookup lookup-assessment-duration"
   })
 ]
 
@@ -218,8 +240,8 @@ gbv_follow_up_subform_section = FormSection.create_or_update_form_section({
   initial_subforms: 1,
   mobile_form: true,
   perm_visible: false,
-  name_all: "Nested GBV Follow Up Subform",
-  description_all: "Nested GBV Follow Up Subform",
+  name_en: "Nested GBV Follow Up Subform",
+  description_en: "Nested GBV Follow Up Subform",
   collapsed_fields: ["followup_service_type", "followup_date"]
 })
 
@@ -235,17 +257,52 @@ action_plan_subform_section = FormSection.create_or_update_form_section({
     editable: true,
     fields: action_plan_subform_fields,
     initial_subforms: 1,
-    name_all: "Nested Action Plan",
-    description_all: "Action Plan Subform",
+    name_en: "Nested Action Plan",
+    description_en: "Action Plan Subform",
     collapsed_fields: ["service_type", "service_appointment_date"]
 })
 
 action_plan_fields = [
+  Field.new({"name" => "case_plan_approval_type_gbv",
+            "type" => "select_box",
+            "editable" => false,
+            "disabled" => true,
+            "display_name_en" => "Approval Type",
+            "option_strings_source" => "lookup lookup-approval-type",
+            "help_text_en"=> "Case Plan, Action Plan, Service Provision"
+          }),
+  Field.new({"name" => "case_plan_approved_gbv",
+             "type" => "tick_box",
+             "editable" => false,
+             "disabled" => true,
+             "tick_box_label_en" => "Yes",
+             "display_name_en" => "Approved by Manager"
+            }),
+  Field.new({"name" => "case_plan_approved_date_gbv",
+             "type" => "date_field",
+             "editable" => false,
+             "disabled" => true,
+             "display_name_en" => "Date"
+            }),
+  Field.new({"name" => "case_plan_approved_comments_gbv",
+             "type" => "textarea",
+             "editable" => false,
+             "disabled" => true,
+             "display_name_en" => "Manager Comments"
+            }),
+  Field.new({"name" => "approval_status_case_plan_gbv",
+             "type" => "select_box",
+             "editable" => false,
+             "disabled" => true,
+             "display_name_en" => "Approval Status",
+             "option_strings_source" => "lookup lookup-approval-status",
+             "help_text"=> "Requested, Pending, Approved, Rejected"
+            }),
   Field.new({"name" => "incident_links",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "custom",
-             "display_name_all" => "Incident Links",
+             "display_name_en" => "Incident Links",
              "custom_template" => "children/incident_links",
              "create_property" => false,
              "editable" => true
@@ -254,28 +311,28 @@ action_plan_fields = [
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "separator",
-             "display_name_all" => "Action Plan ", #Note the extra trailing space!
-             "help_text_all" => "Please add all needs that you identified in the assessment. Use the Add button to add other needs that should be part of the Action Plan."
+             "display_name_en" => "Action Plan ", #Note the extra trailing space!
+             "help_text_en" => "Please add all needs that you identified in the assessment. Use the Add button to add other needs that should be part of the Action Plan."
             }),
   Field.new({"name" => "action_plan_section",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "subform", "editable" => true,
              "subform_section_id" => action_plan_subform_section.unique_id,
-             "display_name_all" => "Action Plan"
+             "display_name_en" => "Action Plan"
             }),
   Field.new({"name" => "action_follow_up_header",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "separator",
-             "display_name_all" => "Follow Ups"
+             "display_name_en" => "Follow Ups"
             }),
   Field.new({"name" => "gbv_follow_up_subform_section",
              "show_on_minify_form" => true,
              "mobile_visible" => true,
              "type" => "subform", "editable" => true,
              "subform_section_id" => gbv_follow_up_subform_section.unique_id,
-             "display_name_all" => "Follow Up"
+             "display_name_en" => "Follow Up"
   })
 ]
 
@@ -290,6 +347,6 @@ FormSection.create_or_update_form_section({
   editable: true,
   fields: action_plan_fields,
   mobile_form: true,
-  name_all: "Action Plan",
-  description_all: "Action Plan"
+  name_en: "Action Plan",
+  description_en: "Action Plan"
 })

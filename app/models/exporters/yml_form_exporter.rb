@@ -19,13 +19,18 @@ module Exporters
     end
 
     def dir_name
-      name_ext = ''
-      if @form_id.present?
-        name_ext = @form_id
+      custom_export_dir = ENV['EXPORT_DIR']
+      if custom_export_dir.present? && File.directory?(custom_export_dir)
+        return custom_export_dir
       else
-        name_ext = "#{@record_type}_#{@primero_module.name.downcase}"
+        name_ext = ''
+        if @form_id.present?
+          name_ext = @form_id
+        else
+          name_ext = "#{@record_type}_#{@primero_module.name.downcase}"
+        end
+        return File.join(Rails.root.join('tmp', 'exports'), "forms_yml_export_#{name_ext}_#{DateTime.now.strftime("%Y%m%d.%I%M%S")}")
       end
-      File.join(Rails.root.join('tmp', 'exports'), "forms_yml_export_#{name_ext}_#{DateTime.now.strftime("%Y%m%d.%I%M%S")}")
     end
 
     def dir
@@ -89,7 +94,8 @@ module Exporters
       form_hash = {}
       form_hash[form_section.unique_id] = form_section.localized_property_hash(@locale, @show_hidden_fields)
       file_hash = {}
-      file_hash['en'] = form_hash
+      form_hash.compact
+      file_hash[@locale] = form_hash.present? ? form_hash : nil
       @io << file_hash.to_yaml
       complete
     end
@@ -103,7 +109,7 @@ module Exporters
         lookup_hash = {}
         lookups.each {|lkp| lookup_hash[lkp.id] = lkp.localized_property_hash(@locale)}
         file_hash = {}
-        file_hash['en'] = lookup_hash
+        file_hash[@locale] = lookup_hash
         @io << file_hash.to_yaml
         complete
       else

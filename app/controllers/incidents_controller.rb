@@ -5,6 +5,7 @@ class IncidentsController < ApplicationController
   include RecordFilteringPagination
 
   before_action :normalize_violations, :only => [:create, :update]
+  before_action :load_fields, :only => [:index]
   #TODO: Do we need to sanitize params?
   #TODO: Dp we need to filter_params_array_duplicates?
 
@@ -42,6 +43,12 @@ class IncidentsController < ApplicationController
   end
 
   private
+
+  def load_fields
+    @gbv_sexual_violence_type_field = Field.find_by_name_from_view('gbv_sexual_violence_type')
+    @agency_offices = Lookup.values('lookup-agency-office')
+    @user_group_ids = UserGroup.all.rows.map(&:id).uniq
+  end
 
   def extra_permitted_parameters
     super + ['violations']

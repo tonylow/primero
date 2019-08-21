@@ -3,11 +3,12 @@
 #
 
 class ApplicationController < ActionController::Base
-  protect_from_forgery with: :exception, prepend: true
+  protect_from_forgery with: :exception, prepend: true, unless: -> { request.format.json? }
   before_action :authorize_profiler
 
   helper :all
   helper_method :current_user_name, :current_user, :current_user_full_name, :current_session, :logged_in?
+  helper_method :is_mobile?
 
   include AgencyLogos
   include Security::Authentication
@@ -15,10 +16,12 @@ class ApplicationController < ActionController::Base
   before_action :permit_all_params
   before_action :extend_session_lifetime
   before_action :check_authentication
+  before_action :load_system_settings
   before_action :set_locale
 
   around_action :with_timezone
 
+  rescue_from ActionController::InvalidAuthenticityToken, :with => :redirect_to_login
   rescue_from( AuthenticationFailure ) { |e| handle_authentication_failure(e) }
   rescue_from( AuthorizationFailure ) { |e| handle_authorization_failure(e) }
   rescue_from( ErrorResponse ) { |e| render_error_response(e) }
@@ -94,7 +97,11 @@ class ApplicationController < ActionController::Base
     if logged_in?
       I18n.locale = (mobile_locale || current_user.locale || I18n.default_locale)
     end
-    @page_direction = I18n.locale.to_s.start_with?('ar') ? 'rtl' : 'ltr'
+    page_direction(I18n.locale)
+  end
+
+  def load_system_settings
+    @system_settings ||= SystemSettings.current
   end
 
   def clean_params(param)
@@ -147,6 +154,18 @@ class ApplicationController < ActionController::Base
     self.class.model_class
   end
 
+  def is_mobile?
+    if request.present?
+      @is_mobile ||= (/Android/i.match(request.user_agent) || (/Android/i && /mobile/i).match(request.user_agent)).present?
+    else
+      false
+    end
+  end
+
+  def redirect_to_login
+    redirect_to logout_path
+  end
+
   private
 
   def permit_all_params
@@ -162,5 +181,9 @@ class ApplicationController < ActionController::Base
     mobile_locale =  ((params['mobile'] == true || params['mobile'] == 'true') &&
                       params['locale'].present? &&
                       (Primero::Application::LOCALES.include? params['locale'])) ? params['locale'] : nil
+  end
+
+  def page_direction(locale)
+    @page_direction = Primero::Application::RTL_LOCALES.include?(locale.to_s) ? 'rtl' : 'lrt'
   end
 end

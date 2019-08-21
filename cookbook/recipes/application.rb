@@ -83,6 +83,27 @@ execute 'Autoload RVM on sudo' do
   end
 end
 
+execute 'Set RAILS_ENV' do
+  user node[:primero][:app_user]
+  command "echo 'export RAILS_ENV=production' >> #{bashrc_file}"
+  not_if do
+    ::File.readlines(bashrc_file).grep(/RAILS_ENV/).size > 0
+  end
+end
+
+directory node[:primero][:bin_dir] do
+  action :create
+  owner node[:primero][:app_user]
+  group node[:primero][:app_group]
+end
+
+cookbook_file ::File.join(node[:primero][:bin_dir], 'reset_config_to') do
+  source 'reset_config_to'
+  user node[:primero][:app_user]
+  group node[:primero][:app_group]
+  mode '0744'
+end
+
 railsexpress_patch_setup 'prod' do
   user node[:primero][:app_user]
   group node[:primero][:app_group]
@@ -98,8 +119,9 @@ rvm_ruby_name = "#{node[:primero][:ruby_version]}-#{node[:primero][:ruby_patch]}
 execute_with_ruby 'prod-ruby' do
   command <<-EOH
     rvm install #{node[:primero][:ruby_version]} -n #{node[:primero][:ruby_patch]} --patch #{node[:primero][:ruby_patch]}
-    rvm rubygems #{node[:primero][:rubygems_version]}
+    rvm rubygems #{node[:primero][:rubygems_version]} --force
     rvm --default use #{rvm_ruby_name}
+    rvm reload && rvm repair all
   EOH
 end
 
@@ -130,6 +152,14 @@ scheduler_log_dir = ::File.join(node[:primero][:log_dir], 'scheduler')
     owner node[:primero][:app_user]
     group node[:primero][:app_group]
   end
+end
+
+logrotate_app 'primero-production' do
+  path ::File.join(rails_log_dir, '*.log')
+  size 50 * 1024 * 1024
+  rotate 20
+  frequency nil
+  options %w( copytruncate delaycompress compress notifempty missingok )
 end
 
 unless node[:primero][:couchdb][:password]
@@ -219,6 +249,18 @@ template File.join(node[:primero][:app_dir], 'config/mailers.yml') do
   mode '444'
 end
 
+template File.join(node[:primero][:app_dir], 'config/locales.yml') do
+  source 'locales.yml.erb'
+  variables({
+    :environments => [ node[:primero][:rails_env] ],
+    :default_locale => node[:primero][:locales][:default_locale],
+    :locales => node[:primero][:locales][:locales],
+  })
+  owner node[:primero][:app_user]
+  group node[:primero][:app_group]
+  mode '444'
+end
+
 app_tmp_dir = ::File.join(node[:primero][:app_dir], 'tmp')
 directory app_tmp_dir do
   action :create
@@ -250,6 +292,10 @@ end
 # TODO: This will have to be subtle. Will need to define "what is sutble"?
 execute_bundle 'reindex-solr' do
   command "rake sunspot:reindex"
+end
+
+execute_bundle 'clear-cache' do
+  command "rake tmp:cache:clear"
 end
 
 execute_bundle 'precompile-assets' do

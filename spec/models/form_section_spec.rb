@@ -132,24 +132,32 @@ describe FormSection do
     end
 
     describe 'format_forms_for_mobile' do
+      before do
+        Primero::Application.stub :locales => [ Primero::Application::LOCALE_ENGLISH, Primero::Application::LOCALE_ARABIC,
+                                                Primero::Application::LOCALE_FRENCH]
+        Primero::Application.stub :default_locale => Primero::Application::LOCALE_ENGLISH
+      end
+
       it 'formats for moble' do
         expected = {"Children"=>
                         [{"unique_id"=>"MOBILE_1",
-                          :name=>{"en"=>"Mobile 1", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
+                          :name=>{"en"=>"Mobile 1", "ar"=>"", "fr"=>""},
                           "order"=>0,
-                          :help_text=>{"en"=>"", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
+                          :help_text=>{"en"=>"", "ar"=>"", "fr"=>""},
                           "base_language"=>"en",
                           "fields"=>
                               [{"name"=>"mobile_1_nested",
-                                "editable"=>true,
+                                "disabled"=>false,
                                 "multi_select"=>false,
                                 "type"=>"subform",
                                 "required"=>false,
+                                "option_strings_source"=>nil,
                                 "show_on_minify_form"=>false,
                                 "mobile_visible"=>true,
-                                :display_name=>{"en"=>"Mobile 1 Nested", "fr"=>"Mobile 1 Nested", "ar"=>"Mobile 1 Nested", "ar-LB"=>"Mobile 1 Nested", "es"=>"Mobile 1 Nested"},
-                                :help_text=>{"en"=>"", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
-                                :option_strings_text=>{"en"=>[], "fr"=>[], "ar"=>[], "ar-LB"=>[], "es"=>[]}}]}]}
+                                :display_name=>{"en"=>"Mobile 1 Nested", "ar"=>"Mobile 1 Nested", "fr"=>"Mobile 1 Nested"},
+                                :help_text=>{"en"=>"", "ar"=>"", "fr"=>""},
+                                :option_strings_text=>{"en"=>[], "ar"=>[], "fr"=>[]},
+                                "date_validation"=>nil}]}]}
         form_sections = FormSection.group_forms([@form_section_mobile_1], true)
         expect(FormSection.format_forms_for_mobile(form_sections, :en, 'case')).to eq(expected)
       end
@@ -551,6 +559,133 @@ describe FormSection do
       form_section = FormSection.new(:name => 'Unique Name', :unique_id => 'unique_name')
       form_section.create!
     end
+
+    context 'when changinging field type' do
+      before do
+        fields = [
+            Field.new({"name" => "field_test_field_type_text",
+                       "type" => Field::TEXT_FIELD,
+                       "display_name_all" => "Field Test Field Type Text"
+                      }),
+            Field.new({"name" => "field_test_field_type_textarea",
+                       "type" => Field::TEXT_AREA,
+                       "display_name_all" => "Field Test Field Type Text Area"
+                      }),
+            Field.new({"name" => "field_test_field_type_select_box",
+                       "type" => Field::SELECT_BOX,
+                       "display_name_all" => "Field Test Field Type select box",
+                       "option_strings_text" => "Yes\nNo"
+                      })
+        ]
+        @form_field_type_test = FormSection.create(
+            :unique_id => "form_section_test_field_type",
+            :parent_form=>"case",
+            "visible" => true,
+            :order_form_group => 1,
+            :order => 1,
+            :order_subform => 0,
+            :form_group_name => "Form Section Test",
+            "editable" => true,
+            "name_all" => "Form Section Test 2",
+            "description_all" => "Form Section Test 2",
+            :fields => fields
+        )
+      end
+
+      context 'from text field' do
+        before do
+          @changing_field = @form_field_type_test.fields.select{|fd| fd.type == Field::TEXT_FIELD}.first
+        end
+
+        context 'to textarea field' do
+          before do
+            @changing_field.type = Field::TEXT_AREA
+          end
+
+          it 'is valid' do
+            expect(@form_field_type_test).to be_valid
+          end
+        end
+
+        context 'to select_box field' do
+          before do
+            @changing_field.type = Field::SELECT_BOX
+          end
+
+          it 'is not valid' do
+            expect(@form_field_type_test).not_to be_valid
+            expect(@form_field_type_test.errors[:fields]).to include("Can't change type of existing field 'field_test_field_type_text' on form 'Form Section Test 2'")
+          end
+        end
+      end
+
+      context 'from textarea field' do
+        before do
+          @changing_field = @form_field_type_test.fields.select{|fd| fd.type == Field::TEXT_AREA}.first
+        end
+
+        context 'to text field' do
+          before do
+            @changing_field.type = Field::TEXT_FIELD
+          end
+
+          it 'is valid' do
+            expect(@form_field_type_test).to be_valid
+          end
+        end
+
+        context 'to select_box field' do
+          before do
+            @changing_field.type = Field::SELECT_BOX
+          end
+
+          it 'is not valid' do
+            expect(@form_field_type_test).not_to be_valid
+            expect(@form_field_type_test.errors[:fields]).to include("Can't change type of existing field 'field_test_field_type_textarea' on form 'Form Section Test 2'")
+          end
+        end
+      end
+
+      context 'from select_box field' do
+        before do
+          @changing_field = @form_field_type_test.fields.select{|fd| fd.type == Field::SELECT_BOX}.first
+        end
+
+        context 'to text field' do
+          before do
+            @changing_field.type = Field::TEXT_FIELD
+          end
+
+          it 'is not valid' do
+            expect(@form_field_type_test).not_to be_valid
+            expect(@form_field_type_test.errors[:fields]).to include("Can't change type of existing field 'field_test_field_type_select_box' on form 'Form Section Test 2'")
+          end
+        end
+
+        context 'to textarea field' do
+          before do
+            @changing_field.type = Field::TEXT_AREA
+          end
+
+          it 'is not valid' do
+            expect(@form_field_type_test).not_to be_valid
+            expect(@form_field_type_test.errors[:fields]).to include("Can't change type of existing field 'field_test_field_type_select_box' on form 'Form Section Test 2'")
+          end
+        end
+
+        context 'to numeric field' do
+          before do
+            @changing_field.type = Field::NUMERIC_FIELD
+          end
+
+          it 'is not valid' do
+            expect(@form_field_type_test).not_to be_valid
+            expect(@form_field_type_test.errors[:fields]).to include("Can't change type of existing field 'field_test_field_type_select_box' on form 'Form Section Test 2'")
+          end
+        end
+      end
+
+    end
   end
 
   describe "highlighted_fields" do
@@ -619,8 +754,14 @@ describe FormSection do
       end
     end
 
+    #TODO this breaks in 2 scenarios...
+    # 1) fields such as unique_id get confused with the Indonesia locale 'id'
+    # 2) some locales such as ar-LB are more than 2 chars long.  Bad to assume last 2 characters are the locale
+    # Another thing that is bad with this is it loops through all properties, even non-localized properties
+    # It is suspected this is only used by the 'published' api action which is not used by the mobile app
+    # TODO LB-293 removing this method will be addressed in a later ticket.
     describe "formatted hash" do
-      it "should combine the translations into a hash" do
+      xit "should combine the translations into a hash" do
         fs = FormSection.new(:name_en => "english name", :name_fr => "french name", :unique_id => "unique id",
                              :fields => [Field.new(:display_name_en => "dn in english", :display_name_es => "dn in spanish", :name => "name")])
         form_section = fs.formatted_hash
@@ -882,7 +1023,7 @@ describe FormSection do
         #This field is a text_field in another form.
         fields = [
           Field.new({"name" => "field_name_2",
-                     "type" => "textarea",
+                     "type" => Field::SELECT_BOX,
                      "display_name_all" => "Field Name 2"
                     })
         ]
@@ -906,7 +1047,7 @@ describe FormSection do
 
         #There is other field with the same on other form section
         #so, we can't change the type.
-        expect(form.errors.messages[:fields]).to eq(["Can't change type of existing field 'field_name_2' on form 'Form Section Test 2'"])
+        expect(form.errors.messages[:fields]).to include("Can't change type of existing field 'field_name_2' on form 'Form Section Test 2'")
       end
 
       it "should allow fields with the same name on different subforms" do
@@ -988,14 +1129,14 @@ describe FormSection do
       it "should not add field with different type" do
         #This field is a text_field in another form.
         @form.fields << Field.new({"name" => "field_name_2",
-                                   "type" => "textarea",
+                                   "type" => Field::SELECT_BOX,
                                    "display_name_all" => "Field Name 2"
                                   })
         @form.save.should be_falsey
 
         #There is other field with the same on other form section
         #so, we can't change the type.
-        expect(@form.errors.messages[:fields]).to eq(["Can't change type of existing field 'field_name_2' on form 'Form Section Test 2'"])
+        expect(@form.errors.messages[:fields]).to include("Can't change type of existing field 'field_name_2' on form 'Form Section Test 2'")
       end
 
       it "should allow fields with the same name on different subforms" do

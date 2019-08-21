@@ -145,7 +145,6 @@ module ApplicationHelper
   end
 
   def ctl_cancel_button(path, additional_classes = "gray")
-    record = controller.controller_name.gsub('_', ' ').titleize
     discard_button(polymorphic_path(path), additional_classes)
   end
 
@@ -163,12 +162,12 @@ module ApplicationHelper
     end
   end
 
-  def render_controls(record, path=nil)
+  def render_controls(record, path=nil, cancel_path=nil)
     content_tag :div, class: 'button-group' do
       if record.present? && record.new?
         ctl_cancel_button(path || record) + ctl_save_button
       elsif current_actions(action: ['update', 'edit'])
-        ctl_edit_button(record, path) + ctl_cancel_button(path || record, "middle_btn") + ctl_save_button
+        ctl_edit_button(record, path) + ctl_cancel_button(cancel_path || path || record, "middle_btn") + ctl_save_button
       elsif current_actions(action: ['edit_locale'])
         ctl_edit_button(record, path) + ctl_cancel_button(record) + ctl_save_button
       else
@@ -196,13 +195,15 @@ module ApplicationHelper
   def exporter_params_page(exporter_id, params)
     if exporter_id == "list_view_csv"
       params.merge({"export_list_view" => "true"})
+    elsif exporter_id == "duplicate_id_csv"
+      params.merge({"export_duplicates" => "true"})
     else
       params
     end
   end
 
   def exporter_visible_page?(exporter_id, modules_id)
-    if exporter_id == "list_view_csv"
+    if ["list_view_csv", "duplicate_id_csv"].include?(exporter_id)
       current_actions(action: ['index'])
     elsif exporter_id == "unhcr_csv"
       return modules_id.include?(PrimeroModule::CP)
@@ -213,6 +214,12 @@ module ApplicationHelper
     else
       true
     end
+  end
+
+  def display_sex(value, lookups=[])
+    gender_lookup = lookups.select{|l| l.id == 'lookup-gender'}.first
+    genders = gender_lookup.lookup_values.map{|v| [v['id'], v['display_text']]}.to_h
+    genders[value] || value
   end
 
   def disabled_status(object)

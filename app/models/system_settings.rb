@@ -5,11 +5,15 @@ class SystemSettings < CouchRest::Model::Base
   include Memoizable
   include LocalizableProperty
 
-  property :default_locale, String, :default => 'en'
+  DEFAULT_BASE_LANGUAGE = Primero::Application::LOCALE_ENGLISH
+  #TODO We now use locales.yml to set default locale, but leaving this now for backwards compatibility
+  property :default_locale, String, :default => Primero::Application::LOCALE_ENGLISH
+  property :locales, [String], :default => [Primero::Application::LOCALE_ENGLISH]
   property :case_code_format, [String], :default => []
   property :case_code_separator, String
   property :auto_populate_list, :type => [AutoPopulateInformation], :default => []
   property :unhcr_needs_codes_mapping, Mapping
+  property :export_config_id
   property :reporting_location_config, ReportingLocation
   property :primero_version
   property :age_ranges, { String => [AgeRange] }
@@ -20,12 +24,18 @@ class SystemSettings < CouchRest::Model::Base
   property :due_date_from_appointment_date, TrueClass, :default => false
   property :notification_email_enabled, TrueClass, :default => false
   property :welcome_email_enabled, TrueClass, :default => false
-  localize_properties [:welcome_email_text]
+  property :duplicate_export_field
 
-  validates_presence_of :default_locale, :message => I18n.t("errors.models.system_settings.default_locale")
+  localize_properties [:welcome_email_text]
+  property :base_language, :default=>Primero::Application::LOCALE_ENGLISH
+
+  # TODO this validation has been commented out because default_locale can now be blank if the locales.yml is used
+  # validates_presence_of :default_locale, :message => I18n.t("errors.models.system_settings.default_locale")
+  validate :validate_locales
 
   #TODO: Think about what needs to take place to the current config. Update?
   before_save :set_version
+  before_save :add_english_locale
   after_initialize :set_version
 
   design do
@@ -44,6 +54,13 @@ class SystemSettings < CouchRest::Model::Base
     end
   end
 
+  #For now... allow empty locales for backwards compatibility with older configurations
+  #The wrapper method will handle blank locales
+  def validate_locales
+    return true if locales.blank? || (locales.include? Primero::Application::LOCALE_ENGLISH)
+    errors.add(:locales, I18n.t("errors.models.system_settings.locales"))
+  end
+
   #SyetsmSettings should be a singleton. It can have a hard-coded name.
   def name
     I18n.t('system_settings.label')
@@ -57,6 +74,10 @@ class SystemSettings < CouchRest::Model::Base
 
   def set_version
     self.primero_version = Primero::Application::VERSION
+  end
+
+  def add_english_locale
+    locales.unshift(Primero::Application::LOCALE_ENGLISH) if locales.present? && (locales.exclude? Primero::Application::LOCALE_ENGLISH)
   end
 
   def auto_populate_info(field_key = "")

@@ -7,16 +7,14 @@ describe Lookup do
     lookup.errors[:name].should == ["Name must not be blank"]
   end
 
-  it "should not be valid if lookup_values is empty" do
-    lookup = Lookup.new
-    lookup.should_not be_valid
-    lookup.errors[:lookup_values].should == ["Field must have at least 2 options"]
+  it "should be valid if lookup_values is empty" do
+    lookup = Lookup.new(:name => "Name")
+    lookup.should be_valid
   end
 
   it "should sanitize and check for lookup values" do
     lookup = Lookup.new(:name => "Name", :lookup_values => [{:id => "", :display_text => ""}]) #Need empty array, can't use %w here.
-    lookup.should_not be_valid
-    lookup.errors[:lookup_values].should == ["Field must have at least 2 options"]
+    lookup.should be_valid
   end
 
   it "should have a unique id when the name is the same as an existing lookup" do
@@ -45,10 +43,10 @@ describe Lookup do
     before do
       lookup1 = create :lookup, :id => "lookup-location-type", :lookup_values => [{:id => "value1", :display_text => "value1"}, {:id => "value2", :display_text => "value2"}]
     end
-    
+
     it "should return location types" do
       location_types = Lookup.get_location_types
-      
+
       expect(location_types.lookup_values).to eq([
         {"id"=>"value1", "display_text"=>"value1"},
         {"id"=>"value2", "display_text"=>"value2"}
@@ -85,14 +83,31 @@ describe Lookup do
   describe "check return when locale is specified" do
     before do
       Lookup.all.each &:destroy
-      @lookup_multi_locales = Lookup.create!(id: "test", name_en: "English", name_fr: "French", name_ar: "Arabic", name_es: "Spanish", lookup_values_en: [{id: "en1", display_text: "EN1"}, {id: "en2", display_text: "EN2"}], lookup_values_fr: [{id: "fr1", display_text: "FR1"}, {id: "fr2", display_text: "FR2"}], lookup_values_ar: [{id: "ar1", display_text: "AR1"}, {id: "ar2", display_text: "AR2"}], lookup_values_es: [{id: "es1", display_text: "ES1"}, {id: "es2", display_text: "ES2"}])
+      @lookup_multi_locales = Lookup.create!(id: "test", name_en: "English", name_fr: "French", name_ar: "Arabic", name_es: "Spanish",
+                                             lookup_values_en: [{id: "en1", display_text: "EN1"}, {id: "en2", display_text: "EN2"}],
+                                             lookup_values_fr: [{id: "fr1", display_text: "FR1"}, {id: "fr2", display_text: "FR2"}],
+                                             lookup_values_ar: [{id: "ar1", display_text: "AR1"}, {id: "ar2", display_text: "AR2"}],
+                                             lookup_values_es: [{id: "es1", display_text: ""}, {id: "es2", display_text: ""}])
       @lookup_no_locales = Lookup.create!(id: "default", name: "Default", lookup_values: [{id: "default1", display_text: "Default1"}, {id: "default2", display_text: "default2"}])
     end
 
     context "when lookup has many locales" do
-
       it "should return settings for specified locale" do
         expect(Lookup.values('test',nil,locale:'ar')[0]['id']).to eq('ar1')
+      end
+
+      context "and locale is passed in" do
+        context "and passed locale has value for all display_text" do
+          it "returns display text for the locale" do
+            expect(Lookup.values('test',nil,locale: :fr).map{|loc| loc['display_text']}).to include('FR1', 'FR2')
+          end
+        end
+
+        context "and passed locale has no value for any display_text" do
+          it "returns display text for the english locale" do
+            expect(Lookup.values('test',nil,locale: :es).map{|loc| loc['display_text']}).to include('EN1', 'EN2')
+          end
+        end
       end
     end
 
@@ -110,7 +125,7 @@ describe Lookup do
                                              lookup_values_en: [{id: "option_1", display_text: "English Option 1"}, {id: "option_2", display_text: "English Option 2"}],
                                              lookup_values_fr: [{id: "option_1", display_text: "French Option 1"}, {id: "option_2", display_text: "French Option 2"}],
                                              lookup_values_ar: [{id: "option_1", display_text: "Arabic Option 1"}, {id: "option_2", display_text: "Arabic Option 2"}],
-                                             lookup_values_es: [{id: "option_1", display_text: "Spanish Option 1"}, {id: "option_2", display_text: "Spanish Option 2"}])
+                                             lookup_values_es: [{id: "option_1", display_text: ""}, {id: "option_2", display_text: ""}])
       @lookup_no_locales = Lookup.create!(id: "default", name: "Default", lookup_values: [{id: "default1", display_text: "Default1"}, {id: "default2", display_text: "default2"}])
     end
 

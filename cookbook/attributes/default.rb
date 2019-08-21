@@ -8,10 +8,12 @@ default[:primero].tap do |p|
   p[:config_dir] = File.join(node[:primero][:home_dir], 'configuration')
   p[:log_dir] = File.join(node[:primero][:home_dir], 'logs')
   p[:daemons_dir] = File.join(node[:primero][:app_dir], 'daemons')
+  p[:bin_dir] = File.join(node[:primero][:home_dir], 'bin')
   p[:app_user] = 'primero'
   p[:app_group] = 'primero'
   p[:solr_user] = 'solr'
   p[:solr_group] = 'solr'
+  p[:check_online_status] = 'on'
 
   p[:queue].tap do |queue|
     queue[:host] = 'localhost'
@@ -69,7 +71,7 @@ default[:primero].tap do |p|
   p[:ruby_version] = '2.4.3'
   p[:ruby_patch] = 'railsexpress'
   p[:bundler_version] = '1.16.1'
-  p[:rubygems_version] = '2.7.5'
+  p[:rubygems_version] = '2.7.8'
 
   p[:passenger_conf].tap do |pc|
     pc[:min_instances] = 1
@@ -80,6 +82,11 @@ default[:primero].tap do |p|
     m[:delivery_method] = 'sendmail'
     m[:host] = 'primero.org'
     m[:from_address] = 'noreply@primero.org'
+  end
+
+  p[:locales].tap do |m|
+    m[:default_locale] = 'en'
+    m[:locales] = ['en', 'fr', 'ar', 'es']
   end
 end
 

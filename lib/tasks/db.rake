@@ -116,11 +116,11 @@ namespace :db do
         end
       end
       Rails.application.eager_load!
-      couch_models = CouchRest::Model::Base.subclasses
+      couch_models = CouchRest::Model::Base.descendants
       couch_models.each do |couch_model|
         if couch_model.respond_to? :design_doc
-          puts "Syncing design doc for #{couch_model.name}"
-          couch_model.design_doc.sync!
+          puts "Syncing design docs for #{couch_model.name}"
+          couch_model.design_docs.each(&:sync!)
         end
       end
     end

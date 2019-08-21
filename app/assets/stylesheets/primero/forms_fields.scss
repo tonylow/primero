@@ -410,6 +410,7 @@ fieldset {
       span {
         font-weight: normal;
         font-size: $thirteen_px;
+        unicode-bidi: plaintext;
       }
     }
 
@@ -908,3 +909,15 @@ select[data-invalid] + div.chosen-container:not(.chosen-container-active) ul {
   background-color: #f9ecea;
   background-image: none;
 }
+
+.create_subform {
+  .callout {
+    display: none;
+    width: 100%;
+  }
+
+  .create_subform_submit {
+    flex: 1 !important;
+  }
+}
+

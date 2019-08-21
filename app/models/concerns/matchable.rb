@@ -3,13 +3,28 @@ module Matchable
 
   module ClassMethods
 
+    MATCH_MAP = {
+      'nationality' => 'relation_nationality',
+      'language' => 'relation_language',
+      'religion' => 'relation_religion',
+      'ethnicity' => 'relation_ethnicity',
+      'sub_ethnicity_1' => 'relation_sub_ethnicity1',
+      'sub_ethnicity_2' => 'relation_sub_ethnicity2',
+      'relation_nationality' => 'nationality',
+      'relation_language' => 'language',
+      'relation_religion' => 'religion',
+      'relation_ethnicity' => 'ethnicity',
+      'relation_sub_ethnicity1' =>'sub_ethnicity_1',
+      'relation_sub_ethnicity2' => 'sub_ethnicity_2'
+    }
+
     def form_matchable_fields
       form_fields = FormSection.get_matchable_fields_by_parent_form(self.parent_form, false)
       Array.new(form_fields).map(&:name)
     end
 
     def subform_matchable_fields
-      form_fields = FormSection.get_matchable_fields_by_parent_form(self.parent_form)
+      form_fields = FormSection.get_matchable_fields_by_parent_form(self.parent_form, true)
       Array.new(form_fields).map(&:name)
     end
 
@@ -25,11 +40,14 @@ module Matchable
       else
         search = Sunspot.search(match_class) do
           any do
+            match_fields = match_class.matchable_fields
             match_criteria.each do |key, value|
-              fulltext(value, :fields => match_class.get_match_field(key.to_s))
+              field = match_class.get_match_field(key.to_s)
+              fulltext(value, :fields => field) if match_field_exist?(field, match_fields)
             end
           end
           with(:id, child_id) if child_id.present?
+          with(:consent_for_tracing, true)
           sort.each { |sort_field, order| order_by(sort_field, order) }
           paginate pagination
         end
@@ -65,6 +83,10 @@ module Matchable
       ]
     end
 
+    def map_match_field(field_name)
+      MATCH_MAP[field_name] || field_name
+    end
+
     def exclude_match_field(field)
       boost_field = boost_fields.select { |f| f[:field] == field }
       boost_field.empty? || boost_field.first[:match].nil?
@@ -81,6 +103,10 @@ module Matchable
       default_boost_value = 1
       boost_field = boost_fields.select { |f| f[:field] == field }
       boost_field.empty? ? default_boost_value : (boost_field.first[:boost] || default_boost_value)
+    end
+
+    def match_field_exist?(field, field_list)
+      field_list.include?(field.to_s)
     end
   end
 

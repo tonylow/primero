@@ -122,24 +122,28 @@ class SessionsController < ApplicationController
       :organization => user.organization,
       :module_ids => user.module_ids,
       :role_ids => user.role_ids,
-      :language => I18n.default_locale,
+      :language => user.locale || I18n.default_locale,
       :verified => user.verified?
     }
     render( options.merge( :json => json ) )
   end
 
   #Override methods in LoggerActions.
-  def logger_action_titleize
+  def logger_action_name
     if action_name == 'create'
-      I18n.t("logger.login", :locale => :en)
+      'login'
     elsif action_name == 'destroy'
-      I18n.t("logger.logout", :locale => :en)
+      'logout'
     else
       super
     end
   end
 
   def logger_action_identifier
+    nil
+  end
+
+  def logger_model_titleize
     nil
   end
 

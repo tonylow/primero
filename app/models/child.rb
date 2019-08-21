@@ -12,9 +12,14 @@ class Child < CouchRest::Model::Base
   APPROVAL_STATUS_APPROVED = 'approved'
   APPROVAL_STATUS_REJECTED = 'rejected'
 
+  class << self
+    def parent_form
+      'case'
+    end
 
-  def self.parent_form
-    'case'
+    def model_name_for_messages
+      'case'
+    end
   end
 
   def locale_prefix
@@ -49,8 +54,12 @@ class Child < CouchRest::Model::Base
   property :nickname
   property :name
   property :protection_concerns
+  property :consent_for_tracing, TrueClass
   property :hidden_name, TrueClass, :default => false
   property :registration_date, Date
+  property :age, Integer
+  property :date_of_birth, Date
+  property :sex
   property :reunited, TrueClass
   property :reunited_message, String
   property :investigated, TrueClass
@@ -61,8 +70,8 @@ class Child < CouchRest::Model::Base
   property :system_generated_followup, TrueClass, default: false
   #To hold the list of GBV Incidents created from a GBV Case.
   property :incident_links, [], :default => []
+  property :matched_tracing_request_id
 
-  # validate :validate_has_at_least_one_field_value
   validate :validate_date_of_birth
   validate :validate_registration_date
   validate :validate_child_wishes
@@ -70,8 +79,6 @@ class Child < CouchRest::Model::Base
 
   before_save :sync_protection_concerns
   before_save :auto_populate_name
-
-  after_save :find_match_tracing_requests unless (Rails.env == 'production')
 
   def initialize *args
     self['photo_keys'] ||= []
@@ -161,10 +168,12 @@ class Child < CouchRest::Model::Base
   end
 
   def self.quicksearch_fields
+    # The fields family_count_no and dss_id are hacked in only because of Bangladesh
     [
       'unique_identifier', 'short_id', 'case_id_display', 'name', 'name_nickname', 'name_other',
       'ration_card_no', 'icrc_ref_no', 'rc_id_no', 'unhcr_id_no', 'unhcr_individual_no','un_no',
-      'other_agency_id', 'survivor_code_no', 'national_id_no', 'other_id_no'
+      'other_agency_id', 'survivor_code_no', 'national_id_no', 'other_id_no', 'biometrics_id',
+      'family_count_no', 'dss_id'
     ]
   end
 
@@ -172,6 +181,7 @@ class Child < CouchRest::Model::Base
   include Transitionable
   include Reopenable
   include Approvable
+  include Alertable
 
   # Searchable needs to be after other concern includes so that properties defined in those concerns get indexed
   include Searchable
@@ -197,6 +207,7 @@ class Child < CouchRest::Model::Base
     string :workflow_status, as: 'workflow_status_sci'
     string :workflow, as: 'workflow_sci'
     string :child_status, as: 'child_status_sci'
+    string :created_agency_office, as: 'created_agency_office_sci'
     string :risk_level, as: 'risk_level_sci' do
       self.risk_level.present? ? self.risk_level : RISK_LEVEL_NONE
     end
@@ -214,7 +225,6 @@ class Child < CouchRest::Model::Base
     end
   end
 
-  include Alertable
 
   def self.report_filters
     [
@@ -248,13 +258,6 @@ class Child < CouchRest::Model::Base
 
   def add_incident_links(incident_detail_id, incident_id, incident_display_id)
     self.incident_links << {"incident_details" => incident_detail_id, "incident_id" => incident_id, "incident_display_id" => incident_display_id}
-  end
-
-  def validate_has_at_least_one_field_value
-    return true if field_definitions.any? { |field| is_filled_in?(field) }
-    return true if !@file_name.nil? || !@audio_file_name.nil?
-    return true if deprecated_fields && deprecated_fields.any? { |key, value| !value.nil? && value != [] && value != {} && !value.to_s.empty? }
-    errors.add(:validate_has_at_least_one_field_value, I18n.t("errors.models.child.at_least_one_field"))
   end
 
   def validate_date_of_birth
@@ -327,7 +330,7 @@ class Child < CouchRest::Model::Base
   def auto_populate_name
     #This 2 step process is necessary because you don't want to overwrite self.name if auto_populate is off
     a_name = auto_populate('name')
-    self.name = a_name unless a_name.nil?
+    self.name = a_name if a_name.present?
   end
 
   def set_instance_id
@@ -365,16 +368,26 @@ class Child < CouchRest::Model::Base
     self['last_updated_by'].blank? || user_names_after_deletion.blank?
   end
 
+  def family(relation=nil)
+    result = self.try(:family_details_section) || []
+    if relation.present?
+      result = result.select do |member|
+        member.try(:relation) == relation
+      end
+    end
+    return result
+  end
+
   def fathers_name
-    self.family_details_section.select { |fd| fd.relation.try(:downcase) == 'father' }.first.try(:relation_name) if self.family_details_section.present?
+    self.family('father').first.try(:relation_name)
   end
 
   def mothers_name
-    self.family_details_section.select { |fd| fd.relation.try(:downcase) == 'mother' }.first.try(:relation_name) if self.family_details_section.present?
+    self.family('mother').first.try(:relation_name)
   end
 
   def caregivers_name
-    self.name_caregiver || self.family_details_section.select { |fd| fd.relation_is_caregiver == true }.first.try(:relation_name) if self.family_details_section.present?
+    self.name_caregiver || self.family.select { |fd| fd.relation_is_caregiver == true }.first.try(:relation_name)
   end
 
   # Solution below taken from...
@@ -401,14 +414,27 @@ class Child < CouchRest::Model::Base
     end
   end
 
+  def matched_to_trace?(trace_id)
+    self.matched_tracing_request_id.present? &&
+    (self.matched_tracing_request_id.split('::').last == trace_id)
+  end
+
+  #TODO: The method is broken: the check should be for 'tracing_request'.
+  #      Not fixing because find_match_tracing_requests is a shambles.
   def has_tracing_request?
     # TODO: this assumes if tracing-request is in associated_record_types then the tracing request forms are also present. Add check for tracing-request forms.
     self.module.present? && self.module.associated_record_types.include?('tracing-request')
   end
 
   #TODO v1.3: Need rspec test
+  #TODO: Current logic:
+  #  On an update to a case (already inefficient, because most updates to cases arent on matching fields),
+  #  find all TRs that now match (using Solr).
+  #  For those TRs invoke reverse matching logic (why? - probably because Lucene scores are not comparable between TR and Case seraches)
+  #  and update/create the resulting PotentialMatches.
+  #  Delete the untouched PotentialMatches that are no longer valid, because they are based on old searches.
   def find_match_tracing_requests
-    if has_tracing_request?
+    if has_tracing_request? #This always returns false - bug :)
       match_result = Child.find_match_records(match_criteria, TracingRequest)
       tracing_request_ids = match_result==[] ? [] : match_result.keys
       all_results = TracingRequest.match_tracing_requests_for_case(self.id, tracing_request_ids).uniq
@@ -421,7 +447,7 @@ class Child < CouchRest::Model::Base
   def match_criteria(match_request=nil)
     match_criteria = inherited_match_criteria(match_request)
     Child.subform_matchable_fields.each do |field|
-      match_criteria[:"#{field}"] = self.family_details_section.map{|fds| fds[:"#{field}"]}.compact.uniq.join(' ')
+      match_criteria[:"#{field}"] = self.family.map{|member| member[:"#{field}"]}.compact.uniq.join(' ')
     end
     match_criteria.compact
   end
@@ -456,31 +482,13 @@ class Child < CouchRest::Model::Base
     end
   end
 
-  def send_approval_response_mail(manager_id, approval_type, approval, host_url)
-    ApprovalResponseJob.perform_later(manager_id, self.id, approval_type, approval, host_url)
+  def send_approval_response_mail(manager_id, approval_type, approval, host_url, is_gbv = false)
+    ApprovalResponseJob.perform_later(manager_id, self.id, approval_type, approval, host_url, is_gbv)
   end
 
-  private
-
-  def deprecated_fields
-    system_fields = ["created_at",
-                     "last_updated_at",
-                     "last_updated_by",
-                     "last_updated_by_full_name",
-                     "posted_at",
-                     "posted_from",
-                     "_rev",
-                     "_id",
-                     "short_id",
-                     "created_by",
-                     "created_by_full_name",
-                     "couchrest-type",
-                     "histories",
-                     "unique_identifier",
-                     "current_photo_key",
-                     "created_organization",
-                     "photo_keys"]
-    existing_fields = system_fields + field_definitions.map { |x| x.name }
-    self.reject { |k, v| existing_fields.include? k }
+  #Override method in record concern
+  def display_id
+    case_id_display
   end
+
 end

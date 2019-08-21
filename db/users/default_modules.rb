@@ -35,9 +35,9 @@ end
 create_or_update_module(
   name: "CP",
   description: "Child Protection",
-  associated_record_types: ["case", "tracing_request"],
+  associated_record_types: ["case", "tracing_request", "incident"],
   associated_form_ids: [
-    "activities", "basic_identity", "best_interest", "caafag_profile",
+    "activities", "assessment", "basic_identity", "best_interest", "caafag_profile",
     "care_arrangements", "care_assessment", "child_under_5", "bia_documents",
     "child_wishes", "closure_form", "consent", "family_details", "followup",
     "interview_details", "other_documents", "other_identity_details", "partner_details",
@@ -46,9 +46,8 @@ create_or_update_module(
     "tracing_request_inquirer", "tracing_request_record_owner", "tracing_request_tracing_request",
     "tracing_request_photos_and_audio", "followup", "reunification_details", "other_reportable_fields_case",
     "other_reportable_fields_tracing_request", "referral_transfer", "notes", "cp_case_plan", "cp_bia_form",
-    # "cp_incident_form", "cp_individual_details", "cp_offender_details", "cp_other_reportable_fields", "cp_incident_record_owner", # Comment/Un-comment this line to remove/add cp incident forms to CP module
-    # "incident_details_container", # Comment/Un-comment this line to remove/add incident_details form to CP module.
-    "approvals"
+    "cp_incident_form", "cp_individual_details", "cp_offender_details", "cp_other_reportable_fields", "cp_incident_record_owner",
+    "incident_details_container", "approvals", "conference_details_container"
   ],
   field_map: {
     map_to: "primeromodule-cp",
@@ -243,7 +242,8 @@ create_or_update_module(
   allow_searchable_ids: true,
   use_workflow_service_implemented: true,
   use_workflow_case_plan: true,
-  use_workflow_assessment: false
+  use_workflow_assessment: false,
+  reporting_location_filter: true
 )
 
 
@@ -257,7 +257,8 @@ create_or_update_module(
     "other_documents", "consent_for_referrals","safety_plan",
     "incident_record_owner", "incident_service_referrals", "gbv_individual_details", "gbv_incident_form",
     "gbv_sexual_violence", "action_plan_form", "survivor_assessment_form", "gbv_case_closure_form", "alleged_perpetrators_wrapper",
-    "other_reportable_fields_case", "other_reportable_fields_incident", "referral_transfer"
+    "other_reportable_fields_case", "other_reportable_fields_incident", "referral_transfer", "client_feedback", "approvals"
   ],
-  program_id: PrimeroProgram.by_name(:key => "Primero").first.id
+  program_id: PrimeroProgram.by_name(:key => "Primero").first.id,
+  user_group_filter: true
 )

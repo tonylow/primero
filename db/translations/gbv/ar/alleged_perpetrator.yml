@@ -1,0 +1,44 @@
+---
+ar:
+  alleged_perpetrator:
+    name: النموذج الفرعي المتداخل للجاني المزعوم
+    description: النموذج الفرعي المتداخل للجاني المزعوم
+    fields:
+      primary_perpetrator:
+        display_name: هل هذا الجاني هو الجاني الرئيسي؟
+        option_strings_text:
+          primary: رئيسي
+          secondary: ثانوي
+      perpetrator_sex:
+        display_name: جنس الجاني المزعوم
+      former_perpetrator:
+        display_name: هل ارتكب الجاني المزعوم حالات عنف قائم على اساس النوع الاجتماعي سابقة؟
+      perpetrator_nationality:
+        display_name: بلد الجاني المزعوم
+      perpetrator_ethnicity:
+        display_name: قبيلة او طائفة الجاني المزعوم
+      age_group:
+        display_name: الفئة العمرية للجاني المزعوم
+        option_strings_text:
+          '0_11': 0-11
+          '12_17': 12-17
+          '18_25': 18-25
+          '26_40': 26-40
+          '41_60': 41-60
+          '61': فوق 61
+          unknown: غير معروف
+      age_type:
+        display_name: ""
+      perpetrator_relationship:
+        display_name: علاقة الجاني المزعوم مع الناجية
+      perpetrator_occupation:
+        display_name: المهنة الرئيسية للجاني المزعوم (إذا كانت معروفة)
+        option_strings_text:
+          other: أخرى
+          unemployed: عاطل عن العمل
+          unknown: غير معروفة
+          occupation_1: مهنة 1
+          occupation_2: مهنة 2
+          occupation_3: مهنة 3
+          occupation_4: مهنة 4
+          occupation_5: مهنة 5

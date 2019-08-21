@@ -29,6 +29,7 @@ class Report < CouchRest::Model::Base
   MONTH = 'month' #eg. Jan-2015
   YEAR = 'year' #eg. 2015
   DATE_RANGES = [DAY, WEEK, MONTH, YEAR]
+  DEFAULT_BASE_LANGUAGE = Primero::Application::LOCALE_ENGLISH
 
   localize_properties [:name, :description]
   property :module_ids, [String]
@@ -41,6 +42,8 @@ class Report < CouchRest::Model::Base
   property :group_dates_by, default: DAY
   property :is_graph, TrueClass, default: false
   property :editable, TrueClass, default: true
+  property :exclude_empty_rows, TrueClass, default: false
+  property :base_language, default: DEFAULT_BASE_LANGUAGE
 
   #TODO: Currently it's not worth trying to save off the report data.
   #      The report builds a value hash with an array of strings as keys. CouchDB/CouchRest converts this array to a string.
@@ -53,10 +56,10 @@ class Report < CouchRest::Model::Base
   attr_accessor :disaggregate_by_ordered
   attr_accessor :permission_filter
 
-  validates_presence_of :name
   validates_presence_of :record_type
   validates_presence_of :aggregate_by
   validate :modules_present
+  validate :validate_name_in_base_language
 
   before_save :apply_default_filters
 
@@ -69,6 +72,12 @@ class Report < CouchRest::Model::Base
                   }
                 }
               }"
+  end
+
+  def validate_name_in_base_language
+    return true if self.send("name_#{DEFAULT_BASE_LANGUAGE}").present?
+    errors.add(:name, I18n.t("errors.models.report.name_presence"))
+    return false
   end
 
   class << self
@@ -442,7 +451,7 @@ class Report < CouchRest::Model::Base
   def query_solr(record_type, pivots, filters)
     #TODO: This has to be valid and open if a case.
     number_of_pivots = pivots.size #can also be dimensionality, but the goal is to move the solr methods out
-    pivots_string = pivots.map{|p| SolrUtils.indexed_field_name(record_type, p)}.join(',')
+    pivots_string = pivots.map{|p| SolrUtils.indexed_field_name(record_type, p)}.select(&:present?).join(',')
     filter_query = build_solr_filter_query(record_type, filters)
     result_pivots = []
     if number_of_pivots == 1
@@ -477,7 +486,7 @@ class Report < CouchRest::Model::Base
     end
 
     translate_solr_response(0, result_pivots)
-    result = {'pivot' => result_pivots}
+    result = {'pivot' => check_empty_rows(result_pivots)}
   end
 
   def translate_solr_response(map_index, response)
@@ -532,6 +541,11 @@ class Report < CouchRest::Model::Base
   def solr_record_type(record_type)
     record_type = 'child' if record_type == 'case'
     record_type.camelize
+  end
+
+  def check_empty_rows(result_pivots)
+    return result_pivots.reject { |r| r["count"].to_i <= 0 } if self.exclude_empty_rows
+    result_pivots
   end
 
 end

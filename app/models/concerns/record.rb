@@ -61,6 +61,7 @@ module Record
 
     validate :validate_duplicate_of
     validates_with FieldValidator, :type => Field::NUMERIC_FIELD, :min => 0, :max => 130, :pattern_name => /_age$|age/
+    validates_with FieldValidator, :type => Field::NUMERIC_FIELD, :min => -2147483648, :max => 2147483647, :pattern_name => /.+/
     validates_with FieldValidator, :type => Field::NUMERIC_FIELD
     validates_with FieldValidator, :type => Field::DATE_FIELD
     validates_with FieldValidator, :type => Field::TEXT_AREA
@@ -153,6 +154,10 @@ module Record
 
     def parent_form
       self.name.underscore.downcase
+    end
+
+    def model_name_for_messages
+      self.name.titleize.downcase
     end
 
     def locale_prefix
@@ -386,9 +391,7 @@ module Record
   end
 
   def model_name_for_messages
-    model_name = self.class.name.titleize.downcase
-    model_name = "case" if model_name == "child"
-    model_name
+    self.class.model_name_for_messages
   end
 
   def error_with_section(field, message)
@@ -404,9 +407,23 @@ module Record
     end
   end
 
-  def display_field(field_name, lookups = nil)
-    fd = field_definitions.select{|f| f.name == field_name}.first
-    fd.nil? ? "" : fd.display_text(self.send(field_name), lookups)
+  def display_field(field_or_name, lookups = nil)
+    result = ""
+    if field_or_name.present?
+      if field_or_name.is_a?(Field)
+        result = field_or_name.display_text(self.send(field_or_name.name), lookups)
+      else
+        field = Field.find_by_name_from_view(field_or_name)
+        if field.present?
+          result = field.display_text(self.send(field_or_name), lookups)
+        end
+      end
+    end
+    return result
+  end
+
+  def display_id
+    short_id
   end
 
   def update_with_attachments(params, user)
@@ -426,6 +443,7 @@ module Record
     self.audio = new_audio
   end
 
+  #TODO: This should use the FormSection.fields view instead
   def field_definitions
     if @field_definitions.blank?
       @field_definitions = []
@@ -488,10 +506,6 @@ module Record
   end
 
   protected
-
-  def model_field_names
-    field_definitions.map { |f| f.name }
-  end
 
   def is_filled_in? field
     !(self[field.name].nil? || self[field.name] == field.default_value || self[field.name].to_s.empty?)

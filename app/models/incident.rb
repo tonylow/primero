@@ -6,7 +6,7 @@ class Incident < CouchRest::Model::Base
   DEFAULT_INCIDENT_MAPPING = [
     {
       "source" => ["survivor_code_no"],
-      "target" => "survivor_code_no"
+      "target" => "survivor_code"
     }, {
       "source" => ["age"],
       "target" => "age"
@@ -119,9 +119,11 @@ class Incident < CouchRest::Model::Base
       self.incident_date_derived
     end
 
+    string :created_agency_office, as: 'created_agency_office_sci'
+
   end
 
-  def self.make_new_incident(module_id, child=nil, from_module_id=nil, incident_detail_id=nil)
+  def self.make_new_incident(module_id, child=nil, from_module_id=nil, incident_detail_id=nil, user=nil)
     Incident.new.tap do |incident|
       incident['module_id'] = module_id
 
@@ -145,6 +147,7 @@ class Incident < CouchRest::Model::Base
         #After its creation the date will not have a timezone
         incident.date_of_first_report = DateTime.current.to_date
         incident.status = STATUS_OPEN
+        incident.set_creation_fields_for user if user.present?
       end
     end
   end

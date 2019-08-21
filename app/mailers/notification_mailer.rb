@@ -15,7 +15,7 @@ class NotificationMailer < ApplicationMailer
     end
   end
 
-  def manager_approval_response(manager_id, case_id, approval_type, approval, host_url)
+  def manager_approval_response(manager_id, case_id, approval_type, approval, host_url, is_gbv=false)
     @child = Child.get(case_id)
     if @child.blank?
       Rails.logger.error "Approval Response Mail not sent - case not found.  [Case ID: #{case_id}]"
@@ -26,7 +26,9 @@ class NotificationMailer < ApplicationMailer
       if @owner.present? && @owner.email.present? && @owner.send_mail
         @manager = User.get(manager_id)
 
-        @approval_type = Lookup.display_value('lookup-approval-type', approval_type)
+        lookup_name = is_gbv ? 'lookup-gbv-approval-types' : 'lookup-approval-type'
+        @approval_type = Lookup.display_value(lookup_name, approval_type)
+
         @approval = approval == 'true' ? t('approvals.status.approved') : t('approvals.status.rejected')
 
         mail(:to => @owner.email,
@@ -65,5 +67,22 @@ class NotificationMailer < ApplicationMailer
     else
       Rails.logger.error "#{transition_type} Mail not sent - Transition not found for [RecordType: #{record_class} ID: #{record_id}]"
     end
+  end
+
+  def transfer_request(record_class, record_id, user_id, request_transfer_notes, host_url)
+    @model_class = record_class.constantize
+    @record = @model_class.get(record_id)
+    return Rails.logger.error("Request Transfer [RecordType: #{record_class} ID: #{record_id}] to [User ID: #{user_id}] Mail not sent - Record not found") if @record.blank?
+    @user = User.get(user_id)
+    return Rails.logger.error("Request Transfer [RecordType: #{record_class} ID: #{record_id}] to [User ID: #{user_id}] Mail not sent - User not found") if @user.blank?
+    @owner_email = @record.owner&.email
+    return Rails.logger.error("Request Transfer [RecordType: #{record_class} ID: #{record_id}] to [User ID: #{user_id}] Mail not sent - Record Owner has no email address") if @owner_email.blank?
+    @url = "#{host_url}/#{@model_class.parent_form.pluralize}/#{@record.id}"
+    @record_type = @model_class.parent_form.titleize
+    @agency = @user.agency&.name
+    @request_transfer_notes = request_transfer_notes
+
+    mail(:to => @owner_email,
+         :subject => t("email_notification.transfer_request_subject"))
   end
 end

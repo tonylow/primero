@@ -16,12 +16,14 @@ class Transition
   property :is_remote, TrueClass
   property :type_of_export, String
   property :consent_overridden, TrueClass
+  property :consent_individual_transfer, TrueClass
   property :created_at, Date
   property :id
 
   TYPE_REFERRAL = "referral"
   TYPE_REASSIGN = "reassign"
   TYPE_TRANSFER = "transfer"
+  TYPE_TRANSFER_REQUEST = "transfer_request"
 
   TRANSFERRED_STATUS = 'transferred'
 

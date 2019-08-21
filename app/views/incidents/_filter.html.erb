@@ -1,5 +1,7 @@
 <% #All options need to be translated %>
 <div class="panel">
+  <%= render 'record_shared/filter_buttons', do_saved_search: true %>
+  <%= render 'record_shared/saved_search_modal' %>
   <form id="index_filter_form" autocomplete="off">
     <% if filters_to_show.include? 'Flagged' %>
       <%= build_filter_checkboxes(t("incidents.filter_by.flag"), 'flag', [{flag: t("incidents.filter_by.flag_label")}], nil, nil, 'single') %>
@@ -16,6 +18,12 @@
     <% end %>
     <% if filters_to_show.include? 'Social Worker' %>
       <%= build_filter_checkboxes(t("incidents.filter_by.social_worker"), 'owned_by', @associated_users, { multi: true }, false) %>
+    <% end %>
+    <% if filters_to_show.include?('Agency Office') && @agency_offices.present? %>
+      <%= build_filter_checkboxes(t("user.agency_office"), 'created_agency_office', @agency_offices, { multi: true }, false) %>
+    <% end %>
+    <% if filters_to_show.include? 'User Group' %>
+      <%= build_filter_checkboxes(t("permissions.permission.user_group"), 'owned_by_groups', @user_group_ids, { multi: true }, false) %>
     <% end %>
     <% if filters_to_show.include? 'Status' %>
       <%= build_filter_checkboxes(t("incidents.filter_by.status"), 'status', Lookup.values('lookup-incident-status', @lookups, locale: I18n.locale)) %>
@@ -36,11 +44,8 @@
     <% if filters_to_show.include? 'Incident Location' %>
       <%= build_filter_location(t("incidents.filter_by.incident_location"), 'incident_location') %>
     <% end %>
-    <% if filters_to_show.include? 'Interview Date' %>
-			<%= render 'record_shared/filter_date', record: 'incidents', date_field_title: 'interview_date', date_field: 'date_of_first_report' %>
-		<% end %>
-		<% if filters_to_show.include? 'Incident Date' %>
-      <%= render "record_shared/filter_date", record: 'incidents', date_field_title: 'incident_date', date_field: 'incident_date_derived' %>
+    <% if filters_to_show.include? 'Dates' %>
+      <%= render 'record_shared/filter_date', record: 'incidents' %>
     <% end %>
     <% if filters_to_show.include? 'Protection Status' %>
       <%= build_filter_checkboxes(t("incidents.filter_by.unaccompanied_separated_status"), 'unaccompanied_separated_status', Lookup.values('lookup-unaccompanied-separated-status', @lookups, locale: I18n.locale)) %>

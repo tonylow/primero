@@ -2,6 +2,7 @@ class Field
   include CouchRest::Model::CastedModel
   include PrimeroModel
   include LocalizableProperty
+  include Memoizable
 
   property :name
   property :visible, TrueClass, :default => true
@@ -11,6 +12,7 @@ class Field
   property :type
   property :highlight_information , HighlightInformation
   property :editable, TrueClass, :default => true
+  property :deletable, TrueClass, :default => true
   property :disabled, TrueClass, :default => false
   localize_properties [:display_name, :help_text, :guiding_questions, :tally, :tick_box_label]
   localize_properties [:option_strings_text], generate_keys: true
@@ -114,7 +116,6 @@ class Field
   validate :validate_display_name_in_base_language
   validate :valid_tally_field
   validate :validate_option_strings_text
-  validate :validate_option_strings_keys_match
   #TODO: Any subform validations?
 
   def localized_property_hash(locale=FormSection::DEFAULT_BASE_LANGUAGE)
@@ -163,52 +164,78 @@ class Field
   end
 
   def validate_option_strings_text
-    if option_strings_text.present?
-      unless option_strings_text.is_a?(Array)
-        errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.not_array"))
+    base_options = self.send("option_strings_text_#{base_language}")
+    if base_options.blank?
+      #If base options are blank, then all translated options should also be blank
+      if Primero::Application::locales.any? {|locale| self.send("option_strings_text_#{locale}").present?}
+        errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.translations_not_empty"))
         return false
+      else
+        return true
       end
-      option_strings_text.each do |option|
-        unless option.is_a?(Hash)
-          errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.not_hash"))
-          return false
-        end
-        if option['id'].blank?
-          errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.id_blank"))
-          return false
-        end
-        if option['display_text'].blank?
-          errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.display_text_blank"))
-          return false
-        end
-      end
+    end
 
-      unless self.are_options_keys_unique?
-        errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.id_not_unique"))
-        return false
-      end
+    return false unless valid_option_strings?(base_options)
+    return false unless options_keys_unique?(base_options)
+    return false unless valid_option_strings_text_translations?
+    return true
+  end
+
+  def valid_option_strings_text_translations?
+    default_ids = self.send("option_strings_text_#{base_language}").try(:map){|op| op['id']}
+    Primero::Application::locales.each do |locale|
+      next if locale == base_language
+      options = self.send("option_strings_text_#{locale}")
+      next if options.blank?
+      return false unless valid_option_strings?(options, false)
+      return false unless option_keys_match?(default_ids, options)
     end
     return true
   end
 
-  def validate_option_strings_keys_match
-    if option_strings_text.present?
-      default_ids = self.send("option_strings_text_#{base_language}").try(:map){|op| op['id']}
-      if default_ids.present?
-        Primero::Application::locales.each do |locale|
-          next if locale == base_language || self.send("option_strings_text_#{locale}").blank?
-          locale_ids = self.send("option_strings_text_#{locale}").try(:map){|op| op['id']}
-          return errors.add(:option_strings_text, I18n.t("errors.models.field.translated_options_do_not_match")) if ((default_ids - locale_ids).present? || (locale_ids - default_ids).present?)
-        end
-      end
+  def valid_option_strings?(options, is_base_language=true)
+    unless options.is_a?(Array)
+      errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.not_array"))
+      return false
     end
-    true
+
+    options.each {|option| return false unless valid_option?(option, is_base_language)}
+    return true
   end
 
-  def are_options_keys_unique?
-    return true if self.option_strings_text.blank?
-    return true unless self.option_strings_text.is_a?(Array) && self.option_strings_text.first.is_a?(Hash)
-    self.option_strings_text.map{|o| o['id']}.uniq.length == self.option_strings_text.map{|o| o['id']}.length
+  def valid_option?(option, is_base_language=true)
+    unless option.is_a?(Hash)
+      errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.not_hash"))
+      return false
+    end
+
+    if option['id'].blank?
+      errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.id_blank"))
+      return false
+    end
+
+    if is_base_language && option['display_text'].blank?
+      errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.display_text_blank"))
+      return false
+    end
+    return true
+  end
+
+  def option_keys_match?(default_ids, options)
+    locale_ids = options.try(:map){|op| op['id']}
+    if ((default_ids - locale_ids).present? || (locale_ids - default_ids).present?)
+      errors.add(:option_strings_text, I18n.t("errors.models.field.translated_options_do_not_match"))
+      return false
+    end
+    return true
+  end
+
+  def options_keys_unique?(options)
+    unless options.map{|o| o['id']}.uniq.length == options.map{|o| o['id']}.length
+      errors.add(:option_strings_text, I18n.t("errors.models.field.option_strings_text.id_not_unique"))
+      return false
+    end
+    return true
   end
 
   def form
@@ -239,42 +266,81 @@ class Field
     end
   end
 
-  # TODO: Refator this - Slow when you rebuild a form
-  def self.all_searchable_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_fields.map(&:name) }.flatten
+
+  class << self
+
+    # TODO: Refactor this - Slow when you rebuild a form
+    def all_searchable_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_fields.map(&:name) }.flatten
+    end
+
+    def all_searchable_date_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_date_fields.map(&:name) }.flatten
+    end
+
+    def all_searchable_date_time_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_date_time_fields.map(&:name) }.flatten
+    end
+
+    def all_searchable_boolean_field_names(parent_form='case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_boolean_fields.map(&:name) }.flatten
+    end
+
+    def all_filterable_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_fields.map(&:name) }.flatten
+    end
+
+    def all_filterable_multi_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_multi_fields.map(&:name) }.flatten
+    end
+
+    def all_filterable_numeric_field_names(parent_form = 'case')
+      FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_numeric_fields.map(&:name) }.flatten
+    end
+
+    def all_tally_fields(parent_form='case')
+      FormSection.find_by_parent_form(parent_form, false).map {|form| form.all_tally_fields.map(&:name)}.flatten
+    end
+
+    def all_location_field_names(parent_form='case')
+      FormSection.find_locations_by_parent_form(parent_form).map {|form| form.all_location_fields.map(&:name)}.flatten.uniq
+    end
+
+    # This is a rework of the original RapidFTR method that never worked.
+    # It depends on a 'fields' view existing on the FormSection that indexes the fields out of the FormSection.
+    # TODO: This has been renamed to allow a hack to wrap it
+    def find_by_name_from_view(name)
+      result = nil
+      if name.is_a? Array
+        raw_field_data = FormSection.fields(keys: name).rows
+        result = raw_field_data.map{|rf| Field.new(rf['value'])}
+      else
+        raw_field_data = FormSection.fields(key: name).rows.first
+        result = Field.new(raw_field_data['value']) if raw_field_data.present?
+      end
+      return result
+    end
+    memoize_in_prod :find_by_name_from_view
+
+    #TODO: This is a HACK to pull back location fields from admin solr index names,
+    #      completely based on assumptions.
+    #      Also it's inefficient, and potentially inconsistent with itself
+    #      What this is attempting to do:  If this is a location field, it may have the admin_level appended to it
+    #                                      If so, strip off the admin_level so find_by_name_from_view will find something
+    def find_by_name(field_name)
+      return nil if field_name.blank?
+      field_keys = nil
+      if field_name.kind_of?(Array)
+        field_keys = field_name.map{|f| (f.match(".*(\\d)+") && find_by_name_from_view(f).blank?) ? f.gsub(/ *\d+$/, '') : f}
+      elsif field_name.kind_of?(String)
+        field_keys = (field_name.match(".*(\\d)+") && find_by_name_from_view(field_name).blank?) ? field_name.gsub(/ *\d+$/, '') : field_name
+      end
+      return nil if field_keys.blank?
+      find_by_name_from_view(field_keys)
+    end
+
   end
 
-  def self.all_searchable_date_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_date_fields.map(&:name) }.flatten
-  end
-
-  def self.all_searchable_date_time_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_date_time_fields.map(&:name) }.flatten
-  end
-
-  def self.all_searchable_boolean_field_names(parent_form='case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_searchable_boolean_fields.map(&:name) }.flatten
-  end
-
-  def self.all_filterable_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_fields.map(&:name) }.flatten
-  end
-
-  def self.all_filterable_multi_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_multi_fields.map(&:name) }.flatten
-  end
-
-  def self.all_filterable_numeric_field_names(parent_form = 'case')
-    FormSection.find_by_parent_form(parent_form, false).map { |form| form.all_filterable_numeric_fields.map(&:name) }.flatten
-  end
-
-  def self.all_tally_fields(parent_form='case')
-    FormSection.find_by_parent_form(parent_form, false).map {|form| form.all_tally_fields.map(&:name)}.flatten
-  end
-
-  def self.all_location_field_names(parent_form='case')
-    FormSection.find_locations_by_parent_form(parent_form).map {|form| form.all_location_fields.map(&:name)}.flatten.uniq
-  end
 
   def display_name_for_field_selector
     hidden_text = self.visible? ? "" : " (Hidden)"
@@ -289,6 +355,7 @@ class Field
     self.mobile_visible = true if properties["mobile_visible"].nil?
     self.highlight_information = HighlightInformation.new
     self.editable = true if properties["editable"].nil?
+    self.deletable = true if properties["deletable"].nil?
     self.disabled = false if properties["disabled"].nil?
     self.multi_select = false if properties["multi_select"].nil?
     self.required = false if properties["required"].nil?
@@ -312,8 +379,8 @@ class Field
     locale = (opts[:locale].present? ? opts[:locale] : I18n.locale)
     options_list = []
     if self.type == Field::TICK_BOX
-      options_list << {id: 'true', display_text: I18n.t('true')}
-      options_list << {id: 'false', display_text: I18n.t('false')}
+      options_list << {id: 'true', display_text: I18n.t('true')}.with_indifferent_access
+      options_list << {id: 'false', display_text: I18n.t('false')}.with_indifferent_access
     elsif self.option_strings_source.present?
       source_options = self.option_strings_source.split
       #TODO - PRIMERO - need to refactor, see if there is a way to not have incident specific logic in field
@@ -332,12 +399,20 @@ class Field
       else
         #TODO: Might want to optimize this (cache per request) if we are repeating our types (locations perhaps!)
         clazz = Kernel.const_get(source_options.first) #TODO: hoping this guy exists and is a class!
-        options_list += clazz.all_names
+        options_list += clazz.try(:all_names) || []
       end
     else
-      options_list += (self.option_strings_text.present? ? self.option_strings_text(locale) : [])
+      options_list += (self.option_strings_text.present? ? display_option_strings(locale) : [])
     end
     return options_list
+  end
+
+  #Use the current locale's options only if its display text is present.
+  #Else use the default locale's options
+  def display_option_strings(current_locale)
+    locale_options = self.option_strings_text(current_locale)
+    return locale_options if locale_options.any?{|op| op['display_text'].present?}
+    return self.option_strings_text(base_language)
   end
 
   def convert_true_false_key_to_string(value)
@@ -425,7 +500,7 @@ class Field
     Field.localized_properties.each do |property|
       field_hash[property] = {}
       Primero::Application::locales.each do |locale|
-        key = "#{property.to_s}_#{locale.to_s}"
+        key = "#{property.to_s}_#{locale}"
         value = field_hash[key]
         if property == :option_strings_text
           #value = field.options_list(@lookups) #TODO: This includes Locations. Imagine a situation with 4K locations, like Nepal?
@@ -462,50 +537,6 @@ class Field
   def selectable?
     self.option_strings_source.present? || self.option_strings_text.present?
   end
-
-  # This is a rework of the original RapidFTR method that never worked.
-  # It depends on a 'fields' view existing on the FormSection that indexes the fields out of the FormSection.
-  # TODO: This has been renamed to allow a hack to wrap it
-  def self.find_by_name_from_view(name)
-    result = nil
-    if name.is_a? Array
-      raw_field_data = FormSection.fields(keys: name).rows
-      result = raw_field_data.map{|rf| Field.new(rf['value'])}
-    else
-      raw_field_data = FormSection.fields(key: name).rows.first
-      result = Field.new(raw_field_data['value']) if raw_field_data.present?
-    end
-    return result
-  end
-
-  #TODO: This is a HACK to pull back location fields from admin solr index names,
-  #      completely based on assumptions.
-  def self.find_by_name(field_name)
-    field = nil
-    if field_name.present?
-      if field_name.kind_of?(Array)
-        field_name.select{|s|
-          s.match(".*(\\d)+") && !find_by_name_from_view(s).present?
-        }.each{|s|
-          s.gsub!(/ *\d+$/, '')
-        }
-      elsif field_name.match(".*(\\d)+") && !find_by_name_from_view(field_name).present?
-        field_name.gsub!(/ *\d+$/, '')
-      end
-
-      field = find_by_name_from_view(field_name)
-      unless field.present?
-        if field_name.last.is_number? && field_name.length > 1
-          field = find_by_name_from_view(field_name[0..-2])
-          unless field.present? && field.is_location?
-            field = nil
-          end
-        end
-      end
-    end
-    return field
-  end
-
 
   # Whether or not this should display on the show/view pages
   # Should not affect the new/edit pages
@@ -564,7 +595,11 @@ class Field
     if locale.present? && Primero::Application::locales.include?(locale)
       field_hash.each do |key, value|
         if key == 'option_strings_text'
-          update_option_strings_translations(value, locale)
+          if self.option_strings_text.present?
+            update_option_strings_translations(value, locale)
+          else
+            Rails.logger.warn "Field #{self.name} no longer has embedded option strings. Skipping."
+          end
         else
           self.send("#{key}_#{locale}=", value)
         end

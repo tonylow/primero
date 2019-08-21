@@ -54,7 +54,17 @@ NOTE: You can get the actual clone command from Bitbucket by doing the following
 Example:  `$ git clone git@bitbucket.org:quoin/primero.git`
 
 
-If you will also deploying the configuration, you will need to add your public key to the configuration repo.
+On your local machine, cd to the repo root directory and checkout the version tag or branch that you are going to deploy.
+This is critical so the chef recipes used to deploy are appropriate for the application version you are deploying.
+
+Example:
+```sh
+$ cd primero
+$ git checkout v1.5.17
+```
+
+
+If you will also be deploying the configuration, you will need to add your public key to the configuration repo.
 Further instructions below.
 
 
@@ -160,6 +170,14 @@ The following attributes are of special interest for configuration:
  - `primero.seed.bundle`:  The relative path to the config bundle JSON to load.
      This JSON bundle will only load if the seed.script attribute (above) is not set.
      Example: "/jordan/configuration-bundle.json"
+ - `primero.locales.default_locale`: The default locale for the system.
+     If not set, it will default to 'en' (English).
+ - `primero.locales.locales`: An array of locales available in the system
+     This list must be limited to a subset of the list of available locales defined in Primero::Application::LOCALES
+     Setting this list of locales will restrict the list of locales available in the UI when a user is adding translated
+     values, such as in form setup and user setup.
+     The localizeable property logic will only create db fields for these locales.
+     If not set, the default is ['en', 'fr', 'ar', 'es']
 
 ##### Primero Deploy Key
 In the Bitbucket repo (under Settings->deployment keys) make sure you have a key for your deployment.
@@ -297,6 +315,10 @@ For a standard deploy with configuration:   `[ "recipe[primero::default]", "reci
     "ssl": {
       "crt": "-----BEGIN CERTIFICATE-----\n ...",
       "key": "-----BEGIN RSA PRIVATE KEY-----\n ..."
+    },
+    "locales": {
+      "default_locale": "en",
+      "locales": ["en", "fr", "ar"]
     }
   },
   "unattended-upgrades": {
@@ -315,6 +337,13 @@ For a standard deploy with configuration:   `[ "recipe[primero::default]", "reci
 
 Deployment
 ----------
+First, verify you have checked out the correct tag version or branch that you are deploying.
+It should match the version you have specified in the node file.
+
+```sh
+$ git status
+```
+
 Once you have the requirements installed, you can run the following two commands from the
 `cookbook` folder of the repo (cookbook directory must be able to be read by other users):
 

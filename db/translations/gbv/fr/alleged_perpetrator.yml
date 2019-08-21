@@ -1,0 +1,44 @@
+---
+fr:
+  alleged_perpetrator:
+    name: Sous-formulaire imbriqué sur l'auteur présumé
+    description: Sous-formulaire imbriqué sur l'auteur présumé
+    fields:
+      primary_perpetrator:
+        display_name: "S'agit-il de l'auteur principal?"
+        option_strings_text:
+          primary: Principal
+          secondary: Secondaire
+      perpetrator_sex:
+        display_name: Sexe de l'auteur présumé
+      former_perpetrator:
+        display_name: "Cas de VBG précédents par l'auteur présumé?"
+      perpetrator_nationality:
+        display_name: Nationalité de l'auteur présumé
+      perpetrator_ethnicity:
+        display_name: Clan ou ethnicité de l'auteur présumé
+      age_group:
+        display_name: Groupe d'âge de l'auteur présumé
+        option_strings_text:
+          '0_11': 0-11 ans
+          '12_17': 12-17 ans
+          '18_25': 18-25 ans
+          '26_40': 26-40 ans
+          '41_60': 41-60 ans
+          '61': 61 ans et Plus
+          unknown: Inconnu
+      age_type:
+        display_name: ""
+      perpetrator_relationship:
+        display_name: Lien entre la survivante et l'auteur présumé
+      perpetrator_occupation:
+        display_name: Profession de l'auteur présumé (si connue)
+        option_strings_text:
+          other: Autre emploi
+          unemployed: Sans emploi
+          unknown: Inconnue
+          occupation_1: Profession 1
+          occupation_2: Profession 2
+          occupation_3: Profession 3
+          occupation_4: Profession 4
+          occupation_5: Profession 5

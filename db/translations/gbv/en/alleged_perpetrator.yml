@@ -1,0 +1,44 @@
+---
+en:
+  alleged_perpetrator:
+    name: Nested Alleged Perpetrator Subform
+    description: Nested Alleged Perpetrator Subform
+    fields:
+      primary_perpetrator:
+        display_name: Is this the primary perpetrator?
+        option_strings_text:
+          primary: Primary
+          secondary: Secondary
+      perpetrator_sex:
+        display_name: Sex of Alleged Perpetrator
+      former_perpetrator:
+        display_name: Past GBV by alledged perpetrator?
+      perpetrator_nationality:
+        display_name: Nationality of alleged perpetrator
+      perpetrator_ethnicity:
+        display_name: Clan or Ethnicity of alleged perpetrator
+      age_group:
+        display_name: Age group of alleged perpetrator
+        option_strings_text:
+          '0_11': 0-11
+          '12_17': 12-17
+          '18_25': 18-25
+          '26_40': 26-40
+          '41_60': 41-60
+          '61': 61+
+          unknown: Unknown
+      age_type:
+        display_name: Age type of alleged perpetrator
+      perpetrator_relationship:
+        display_name: Alleged perpetrator relationship with survivor
+      perpetrator_occupation:
+        display_name: Main occupation of alleged perpetrator (if known)
+        option_strings_text:
+          other: Other
+          unemployed: Unemployed
+          unknown: Unknown
+          occupation_1: Occupation 1
+          occupation_2: Occupation 2
+          occupation_3: Occupation 3
+          occupation_4: Occupation 4
+          occupation_5: Occupation 5

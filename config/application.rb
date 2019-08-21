@@ -53,14 +53,32 @@ module Primero
     LOCALE_ARABIC = 'ar'
     LOCALE_SPANISH = 'es'
     LOCALE_LEBANON = 'ar-LB'
-    LOCALES = [LOCALE_ENGLISH,LOCALE_FRENCH,LOCALE_ARABIC,LOCALE_LEBANON,LOCALE_SPANISH]
+    LOCALE_SOMALI = 'so'
+    LOCALE_BANGLA = 'bn'
+    LOCALE_BURMESE = 'my'
+    LOCALE_THAI = 'th'
+    LOCALE_KURDISH = 'ku'
+    LOCALE_PORTUGUESE = 'pt'
+    LOCALES = [LOCALE_ENGLISH, LOCALE_FRENCH, LOCALE_ARABIC, LOCALE_LEBANON, LOCALE_SOMALI, LOCALE_SPANISH, LOCALE_PORTUGUESE, LOCALE_BANGLA,
+               LOCALE_BURMESE, LOCALE_THAI, LOCALE_KURDISH]
     LOCALES_WITH_DESCRIPTION = [
       ['-', nil],
       ['English', LOCALE_ENGLISH],
       ['Français', LOCALE_FRENCH],
       ['العربية', LOCALE_ARABIC],
       ['العربية (اللبنانية)', LOCALE_LEBANON],
-      ['Español', LOCALE_SPANISH]
+      ['Af-Soomaali', LOCALE_SOMALI],
+      ['Español', LOCALE_SPANISH],
+      ['Português', LOCALE_PORTUGUESE],
+      ['বাংলা', LOCALE_BANGLA],
+      ['ဗမာစာ', LOCALE_BURMESE],
+      ['ไทย', LOCALE_THAI],
+      ['کوردی', LOCALE_KURDISH],
+    ]
+    RTL_LOCALES = [
+      LOCALE_ARABIC,
+      LOCALE_LEBANON,
+      LOCALE_KURDISH
     ]
 
     if ENV['RAILS_LOG_PATH'].present?
@@ -70,16 +88,20 @@ module Primero
     config.logger = Logger.new(config.paths['log'].first, 1, 50.megabytes)
     config.action_view.logger = nil
 
-    config.couch_watcher_log_level = Logger::INFO
+    config.couch_watcher_log_level = Logger::DEBUG
 
     config.exceptions_app = self.routes
 
     def locales
-      LOCALES
+      @locales ||= I18n.available_locales.map(&:to_s)
     end
 
     def locales_with_description
-      LOCALES_WITH_DESCRIPTION
+      @locales_with_description ||= LOCALES_WITH_DESCRIPTION.select{|l| (locales.include? l.last) || l.last.nil?}
+    end
+
+    def default_locale
+      @default_locale ||= I18n.default_locale.to_s
     end
   end
 end

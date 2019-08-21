@@ -62,19 +62,21 @@ namespace :db do
       end
     end
 
+    desc "Export the configuraton bundle as Ruby seed files"
+    task :export_config_seeds, [:export_directory] => :environment do |t, args|
+      export_directory = args[:export_directory]
+      export_directory = 'seed-files' unless export_directory.present?
+      puts "Exporting current configuration to #{export_directory}"
+      exporter = Exporters::RubyConfigExporter.new(export_directory)
+      exporter.export
+    end
+
     desc "Import the form translations yaml"
     task :import_form_translation, [:yaml_file] => :environment do |t, args|
       file_name = args[:yaml_file]
       if file_name.present?
         puts "Importing form translation from #{file_name}"
-        #TODO extract this code into a re-usable module in the application
-        file_hash = YAML.load_file(file_name)
-        if file_hash.present? && file_hash.is_a?(Hash)
-          locale = file_hash.keys.first
-          file_hash.values.each{|fh| FormSection.import_translations(fh, locale)}
-        else
-          puts "Error parsing yaml file"
-        end
+        Importers::YamlI18nImporter.import(file_name, FormSection)
       else
         puts "ERROR: No input file provided"
       end
@@ -127,16 +129,42 @@ namespace :db do
       file_name = args[:yaml_file]
       if file_name.present?
         puts "Importing lookup translation from #{file_name}"
-        #TODO extract this code into a re-usable module in the application
-        file_hash = YAML.load_file(file_name)
-        if file_hash.present? && file_hash.is_a?(Hash)
-          locale = file_hash.keys.first
-          file_hash.values.each{|fh| Lookup.import_translations(fh, locale)}
-        else
-          puts "Error parsing yaml file"
-        end
+        Importers::YamlI18nImporter.import(file_name, Lookup)
       else
         puts "ERROR: No input file provided"
+      end
+    end
+
+    desc "Set a default password for all generic users."
+    task :default_password => :environment do
+      require 'io/console'
+      affected_users = User.all.select{|u| u.user_name.start_with? 'primero'}
+      if affected_users.size > 0
+        puts "The following users will have their passwords changed:"
+        affected_users.each{|u| puts "  #{u.user_name}"}
+        begin
+          puts "\nIs that OK? (y/n)"
+          ok = STDIN.gets.strip.downcase
+        end until %w(y n).include?(ok)
+        if ok == 'y'
+          puts "Please enter a new default password:"
+          password = STDIN.noecho(&:gets).chomp
+          puts "Enter again to confirm:"
+          password_confirmation = STDIN.noecho(&:gets).chomp
+          affected_users.each do |user|
+            user.password = password
+            user.password_confirmation = password_confirmation
+            if user.valid?
+              user.save!
+              puts "Updated #{user.user_name}"
+            else
+              puts "Invalid password"
+              break
+            end
+          end
+        end
+      else
+        puts "No default users found. Aborting"
       end
     end
 
@@ -316,7 +344,7 @@ namespace :db do
       else
         [
           Agency, ContactInformation, FormSection, Location, Lookup, PrimeroModule,
-          PrimeroProgram, Report, Role, Replication, SystemSettings, SystemUsers, UserGroup
+          PrimeroProgram, Report, Role, Replication, SystemSettings, SystemUsers, ExportConfiguration
         ]
       end
 
@@ -338,6 +366,16 @@ namespace :db do
       puts "Done!"
     end
 
+    # Example usage: bundle exec rake db:data:role_permissions_to_spreadsheet['tmp/test.xls','en']
+    desc "Exports roles permissions to an Excel spreadsheet"
+    task :role_permissions_to_spreadsheet, [:file_name, :locale] => :environment do |t, args|
+      file_name = args[:file_name] || "role_permissions.xls"
+      locale = args[:locale] || :en
+      puts "Writing role permissions to #{file_name}"
+      roles_exporter = Exporters::RolePermissionsExporter.new(file_name, locale)
+      roles_exporter.export_role_permissions_to_spreadsheet
+      puts "Done!"
+    end
 
     #Assign the default owner of all records to be the creator.
     #If no creator exits, set it to be the fallback_user
@@ -414,6 +452,59 @@ namespace :db do
       Rails.logger = Logger.new(STDOUT)
       importer = Importers::XlsImporter.new(spreadsheet_dir,record_type,module_id)
       importer.import_forms_from_spreadsheet
+    end
+
+    desc "Prints out Primero system stats for Verification"
+    task :verify => :environment do
+      system_settings = SystemSettings.current
+      configuration_bundle = ConfigurationBundle.most_recent
+      locales = Primero::Application::locales
+
+      puts '------------------------------------------------------------'
+      puts "Primero Version:  #{system_settings.try(:primero_version)}"
+      puts "Last configuration bundle update: #{configuration_bundle.try(:applied_at)}"
+      puts "Default language: #{system_settings.try(:default_locale)}"
+      puts "Available languages: #{locales}"
+      puts
+
+      #TODO find clean way to get timestamp of couchdb files (NOTE: Need sudo)
+      #TODO We would like to show the laste updated date/time for each DB
+      # puts "Agency table has #{Agency.count} records, last updated on YYYYYYY "
+      # File.mtime("/var/lib/couchdb/primero_user_group_development.couch")
+      # file_time = `sudo stat /var/lib/couchdb/primero_user_group_development.couch|grep Modify|cut -c 9-`
+      puts "Agency table has #{Agency.count} records"
+      puts "ContactInformation table has #{ContactInformation.count} records"
+      puts "FormSection table has #{FormSection.count} records"
+      puts "Location table has #{Location.count} records"
+      puts "Lookup table has #{Lookup.count} records"
+      puts "PrimeroModule table has #{PrimeroModule.count} records"
+      puts "PrimeroProgram table has #{PrimeroProgram.count} records"
+      puts "Replication table has #{Replication.count} records"
+      puts "Report table has #{Report.count} records"
+      puts "Role table has #{Role.count} records"
+      puts "UserGroup table has #{UserGroup.count} records"
+      puts "User table has #{User.count} records"
+      # TODO ExportConfiguration is added in a later version
+      # puts "ExportConfiguration table has #{ExportConfiguration.count} records, last updated on YYYYYYY"
+      puts "SystemSettings table has #{SystemSettings.count} records"
+
+      opt_dir = File.join(Rails.root, '/public/options')
+      if File.exist?(opt_dir)
+        puts 'Options'
+        Dir[opt_dir + '/*'].each {|f| puts "#{File.basename(f)}  #{File.size(f)}  #{File.mtime(f)}"}
+      end
+
+      puts
+
+      latest_sequences = CouchChanges::MODELS_TO_WATCH.inject({}) do |acc, modelCls|
+        acc.merge(modelCls.database.name => modelCls.database.info['update_seq'])
+      end
+      couch_watcher_history = File.join(Rails.root, '/tmp/couch_watcher_history.json')
+      couch_watcher_history_json = JSON.parse(File.read(couch_watcher_history)) if couch_watcher_history.present?
+      pointers_match = (couch_watcher_history_json.present? && couch_watcher_history_json == latest_sequences) ? 'Yes':'No'
+      puts "CouchWatcher pointers match? #{pointers_match}"
+
+      puts '------------------------------------------------------------'
     end
 
   end

@@ -8,7 +8,7 @@ class ReportsController < ApplicationController
   include DeleteAction
 
   #include RecordActions
-  before_action :load_report, except: [:new]
+  before_action :load_report, except: [:new, :index]
   before_action :sanitize_multiselects, only: [:create, :update]
   before_action :sanitize_filters, only: [:create, :update]
   before_action :set_aggregate_order, only: [:create, :update]
@@ -21,6 +21,11 @@ class ReportsController < ApplicationController
     authorize!(:read_reports, Report)
     # NOTE: If we start needing anything more complicated than module filtering on reports,
     #       index them in Solr and make searchable. Replace all these views and paginations with Sunspot.
+
+    #TODO refactor... this extra query to fetch report_ids is not necessary
+    #TODO refactor... the TOTAL count of records can be obtained by getting the result.count
+    #TODO refactor... so, First fetch the reults.  Set @total_records to result.count.  Set reports to result.all
+    #TODO refactor... See implementation in audit_logs_controller and audit_log model
     report_ids = Report.by_module_id(keys: current_user.modules.map{|m|m.id}).values.uniq
     @current_modules = nil #TODO: Hack because this is expected in templates used.
     reports = Report.all(keys: report_ids).page(page).per(per_page).all
@@ -169,9 +174,8 @@ class ReportsController < ApplicationController
       if params[:report][:filters][:template].present?
         params[:report][:filters].delete(:template)
         #convert to array: bad!
-        filters = params[:report][:filters].values
-        filters.each{|filter| filter.compact }.delete_if{|filter| filter.empty?}
-        params[:report][:filters] = filters
+        filters = params[:report][:filters].to_h.values
+        params[:report][:filters] = filters.map {|f| f.delete_if {|_k,v| v.empty?} }.reject(&:blank?)
       end
     end
   end

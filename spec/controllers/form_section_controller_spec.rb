@@ -79,6 +79,12 @@ describe FormSectionController do
 
     #TODO - add incident rspecs
     describe "mobile API" do
+      before do
+        Primero::Application.stub :locales => [ Primero::Application::LOCALE_ENGLISH, Primero::Application::LOCALE_ARABIC,
+                                                Primero::Application::LOCALE_FRENCH]
+        Primero::Application.stub :default_locale => Primero::Application::LOCALE_ENGLISH
+      end
+
       it "only shows mobile forms" do
         get :index, params: {mobile: true, :format => :json}
         expect(assigns[:form_sections]['Children'].size).to eq(2)
@@ -87,32 +93,36 @@ describe FormSectionController do
 
       it 'shows subforms for mobile forms' do
         expected = [{"name"=>"nested_e",
-                     "editable"=>true,
+                     "disabled"=>false,
                      "multi_select"=>false,
                      "type"=>"subform",
                      "subform"=>
                          {"unique_id"=>"E",
-                          :name=>{"en"=>"E", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
+                          :name=>{"en"=>"E", "ar"=>"", "fr"=>""},
                           "order"=>0,
-                          :help_text=>{"en"=>"", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
+                          :help_text=>{"en"=>"", "ar"=>"", "fr"=>""},
                           "base_language"=>"en",
                           "fields"=>
                               [{"name"=>"field1",
-                                "editable"=>true,
+                                "disabled"=>false,
                                 "multi_select"=>false,
                                 "type"=>"text_field",
                                 "required"=>false,
+                                "option_strings_source"=>nil,
                                 "show_on_minify_form"=>false,
                                 "mobile_visible"=>true,
-                                :display_name=>{"en"=>"field1", "fr"=>"field1", "ar"=>"field1", "ar-LB"=>"field1","es"=>"field1"},
-                                :help_text=>{"en"=>"", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
-                                :option_strings_text=>{"en"=>[], "fr"=>[], "ar"=>[], "ar-LB"=>[], "es"=>[]}}]},
+                                :display_name=>{"en"=>"field1", "fr"=>"field1", "ar"=>"field1"},
+                                :help_text=>{"en"=>"", "ar"=>"", "fr"=>""},
+                                :option_strings_text=>{"en"=>[], "ar"=>[], "fr"=>[]},
+                                "date_validation" => nil}]},
                      "required"=>false,
+                     "option_strings_source"=>nil,
                      "show_on_minify_form"=>false,
                      "mobile_visible"=>true,
-                     :display_name=>{"en"=>"nested_e", "fr"=>"nested_e", "ar"=>"nested_e", "ar-LB"=>"nested_e", "es"=>"nested_e"},
-                     :help_text=>{"en"=>"", "fr"=>"", "ar"=>"", "ar-LB"=>"", "es"=>""},
-                     :option_strings_text=>{"en"=>[], "fr"=>[], "ar"=>[], "ar-LB"=>[], "es"=>[]}}]
+                     :display_name=>{"en"=>"nested_e", "ar"=>"nested_e", "fr"=>"nested_e"},
+                     :help_text=>{"en"=>"", "ar"=>"", "fr"=>""},
+                     :option_strings_text=>{"en"=>[], "ar"=>[], "fr"=>[]},
+                     "date_validation" => nil}]
         get :index, params: {mobile: true, :format => :json}
         expect(assigns[:form_sections]['Children'].select{|f| f['unique_id'] == 'D'}.first['fields']).to eq(expected)
       end

@@ -429,10 +429,11 @@ describe ChildrenController, :type => :controller do
       render_views
 
       it "should display information for user manager" do
-        p_module = PrimeroModule.new(:id => "primeromodule-cp", :associated_record_types => ["case"])
+        p_module = build :primero_module
         user = User.new(:user_name => 'fakeadmin', :is_manager => true)
         session = fake_admin_login user
-        user.should_receive(:modules).and_return([p_module], [p_module])
+
+        user.stub(:modules).and_return([p_module], [p_module], [p_module], [p_module])
         user.should_receive(:has_module?).with(anything).and_return(true, true, true)
 
         get :index
@@ -447,10 +448,10 @@ describe ChildrenController, :type => :controller do
       end
 
       it "should not display information for user not manager" do
-        p_module = PrimeroModule.new(:id => "primeromodule-cp", :associated_record_types => ["case"])
+        p_module = build :primero_module
         user = User.new(:user_name => 'fakeadmin', :is_manager => false)
         session = fake_admin_login user
-        user.should_receive(:modules).and_return([p_module], [p_module])
+        user.stub(:modules).and_return([p_module], [p_module], [p_module], [p_module])
         user.should_receive(:has_module?).with(anything).and_return(true, true, true)
 
         get :index
@@ -709,6 +710,8 @@ describe ChildrenController, :type => :controller do
       child = mock_child({:module_id => 'primeromodule-cp'})
       Child.stub(:allowed_formsections).and_return(grouped_forms)
       Child.stub(:get).with("37").and_return(child)
+      allow(child).to receive(:display_id).and_return('37')
+      allow(child).to receive(:owned_by).and_return('test_owner')
       get :show, params: {id: '37'}
       assigns[:form_sections].should == grouped_forms
       #TODO: Do we need to test ordering of forms in the controller?
@@ -763,6 +766,8 @@ describe ChildrenController, :type => :controller do
     it "assigns the requested child as @child" do
       Child.stub(:allowed_formsections).and_return({})
       Child.stub(:get).with("37").and_return(mock_child)
+      allow(@mock_child).to receive(:display_id).and_return('37')
+      allow(@mock_child).to receive(:owned_by).and_return('test_owner')
       get :edit, params: {id: '37'}
       assigns[:child].should equal(mock_child)
     end
@@ -772,6 +777,8 @@ describe ChildrenController, :type => :controller do
       forms = [stub_form]
       grouped_forms = forms.group_by{|e| e.form_group_name}
       Child.should_receive(:allowed_formsections).and_return(grouped_forms)
+      allow(@mock_child).to receive(:display_id).and_return('37')
+      allow(@mock_child).to receive(:owned_by).and_return('test_owner')
       get :edit, params: {id: '37'}
       assigns[:form_sections].should == grouped_forms
     end
@@ -835,7 +842,7 @@ describe ChildrenController, :type => :controller do
       child = Child.new_with_user_name(user, {:name => 'some name'})
       params_child = {"name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      child.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_child)
+      child.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_child)
       Child.stub(:get).and_return(child)
       put :update, params: {id: '1', child: params_child}
       end
@@ -845,7 +852,7 @@ describe ChildrenController, :type => :controller do
       child = Child.new_with_user_name(user, {:name => 'some name'})
       params_child = {"name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      child.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, true, params_child)
+      child.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, true, params_child)
       Child.stub(:get).and_return(child)
       put :update, params: {id: '1', child: params_child, delete_child_audio: "1"}
     end
@@ -855,7 +862,7 @@ describe ChildrenController, :type => :controller do
       child = Child.new_with_user_name(user, {:name => 'some name'})
       params_child = {"name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      child.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_child)
+      child.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_child)
       Child.stub(:get).and_return(child)
       put :update, params: {id: '1', child: params_child, redirect_url: '/cases'}
       response.should redirect_to '/cases?follow=true'
@@ -867,7 +874,7 @@ describe ChildrenController, :type => :controller do
 
       params_child = {"name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      child.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_child)
+      child.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_child)
       Child.stub(:get).and_return(child)
       put :update, params: {id: '1', child: params_child}
       response.should redirect_to "/cases/#{child.id}?follow=true"
@@ -879,7 +886,7 @@ describe ChildrenController, :type => :controller do
 
       params_child = {"name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      child.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_child)
+      child.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_child)
       Child.stub(:get).and_return(child)
       allow(Rails.logger).to receive(:info)
       expect(Rails.logger).to receive(:info).with("Updating case '#{child.case_id_display}' by user '#{@user.user_name}'")

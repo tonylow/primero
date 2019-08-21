@@ -29,7 +29,8 @@ Report.create_or_update({
   aggregate_by: ['owned_by'],
   filters: default_case_filters,
   is_graph: true,
-  editable: false
+  editable: false,
+  exclude_empty_rows: true
 })
 
 Report.create_or_update({
@@ -42,7 +43,8 @@ Report.create_or_update({
   disaggregate_by: ['child_status'],
   filters: [{'attribute' => 'record_state', 'value' => ['true']}],
   is_graph: true,
-  editable: false
+  editable: false,
+  exclude_empty_rows: true
 })
 
 Report.create_or_update({
@@ -120,5 +122,85 @@ Report.create_or_update({
   group_ages: true,
   filters: default_case_filters,
   is_graph: true,
+  editable: false
+})
+
+Report.create_or_update(
+  name: "Follow up by month by Agency",
+  description: "Number of followups broken down by month and agency",
+  module_ids: [ PrimeroModule::CP ],
+  record_type: "reportable_follow_up",
+  aggregate_by: [ "followup_date" ],
+  disaggregate_by: ["owned_by_agency"],
+  filters: [
+    {
+      "attribute": "child_status",
+      "value": [
+        "Open"
+      ]
+    },
+    {
+      "attribute": "record_state",
+      "value": [
+        "true"
+      ]
+    },
+    {
+      "attribute": "followup_date",
+      "value": [
+        "not_null"
+      ]
+    }
+  ],
+  group_ages: false,
+  group_dates_by: "month",
+  is_graph: true,
+  editable: false,
+)
+
+Report.create_or_update(
+  name: "Follow up by week by Agency",
+  description: "Number of followups broken down by week and agency",
+  module_ids: [ PrimeroModule::CP ],
+  record_type: "reportable_follow_up",
+  aggregate_by: [ "followup_date" ],
+  disaggregate_by: ["owned_by_agency"],
+  filters: [
+    {
+      "attribute": "child_status",
+      "value": [
+        "Open"
+      ]
+    },
+    {
+      "attribute": "record_state",
+      "value": [
+        "true"
+      ]
+    },
+    {
+      "attribute": "followup_date",
+      "value": [
+        "not_null"
+      ]
+    }
+  ],
+  group_ages: false,
+  group_dates_by: "week",
+  is_graph: true,
+  editable: false,
+)
+
+Report.create_or_update({
+  id: '85e5bf5c90cd44a48bccb69410f0e466',
+  name: 'Cases with case plans',
+  description: 'How many registered cases have case plans?',
+  module_ids: [PrimeroModule::CP],
+  record_type: 'case',
+  aggregate_by: ['has_case_plan'],
+  group_ages: false,
+  group_dates_by: 'date',
+  filters: default_case_filters,
+  is_graph: false,
   editable: false
 })

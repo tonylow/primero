@@ -111,8 +111,10 @@ class FormSection < CouchRest::Model::Base
 
   def localized_property_hash(locale=DEFAULT_BASE_LANGUAGE, show_hidden_fields=false)
     lh = localized_hash(locale)
+    #TODO: This is temporary. Eventually form_group_name will be localized
+    lh['form_group_name'] = self.form_group_name if self.form_group_name.present?
     fldz = {}
-    self.fields.each { |f| fldz[f.name] = f.localized_property_hash if (show_hidden_fields || f.visible?)}
+    self.fields.each { |f| fldz[f.name] = f.localized_property_hash locale if (show_hidden_fields || f.visible?)}
     lh['fields'] = fldz
     lh
   end
@@ -142,6 +144,11 @@ class FormSection < CouchRest::Model::Base
   alias to_param unique_id
 
   class << self
+
+    def memoized_dependencies
+      [Field]
+    end
+
     # memoize by_unique_id because some things call this directly
     alias :old_by_unique_id :by_unique_id
     def by_unique_id *args
@@ -227,6 +234,7 @@ class FormSection < CouchRest::Model::Base
       end
       form_section
     end
+    alias :create_or_update :create_or_update_form_section
 
     def find_all_visible_by_parent_form(parent_form, subforms=true)
       #by_parent_form(:key => parent_form).select(&:visible?).sort_by{|e| [e.order_form_group, e.order, e.order_subform]}
@@ -357,6 +365,7 @@ class FormSection < CouchRest::Model::Base
       return forms
     end
 
+    # Returns: an array of fields that are matchable
     def get_matchable_fields_by_parent_form(parent_form, subform=true)
       form_sections = FormSection.by_parent_form(:key => parent_form).all
       if subform
@@ -367,6 +376,22 @@ class FormSection < CouchRest::Model::Base
       form_fields
     end
     memoize_in_prod :get_matchable_fields_by_parent_form
+
+    # Returns: hash of (key) Form ID and (values) Fields that are matchable
+    def get_matchable_form_and_field_names(form_ids, parent_form)
+      form_sections = FormSection.form_sections_by_ids_and_parent_form(form_ids, parent_form)
+      return {} if form_sections.blank?
+      form_hash = {}
+      form_sections.each do |f|
+        matchable_fields = f.all_matchable_fields
+        form_hash[f.unique_id] = matchable_fields.map{|fd| fd.name} if matchable_fields.present?
+      end
+      form_hash
+    end
+
+    def form_sections_by_ids_and_parent_form(form_ids, parent_form)
+      form_ids.present? ? FormSection.by_parent_form_and_unique_id(keys: form_ids.map{|f| [parent_form, f]}).all : []
+    end
 
     #Return only those forms that can be accessed by the user given their role permissions and the module
     def get_permitted_form_sections(primero_module, parent_form, user)
@@ -642,7 +667,8 @@ class FormSection < CouchRest::Model::Base
     def simplify_mobile_form(form_hash)
       form_hash.slice!('unique_id', :name, 'order', :help_text, 'base_language', 'fields')
       form_hash['fields'].each do |field|
-        field.slice!('name', 'editable', 'multi_select', 'type', 'subform', 'required', 'show_on_minify_form','mobile_visible', :display_name, :help_text, :option_strings_text)
+        field.slice!('name', 'disabled', 'multi_select', 'type', 'subform', 'required', 'option_strings_source',
+          'show_on_minify_form','mobile_visible', :display_name, :help_text, :option_strings_text, 'date_validation')
         simplify_mobile_form(field['subform']) if (field['type'] == 'subform' && field['subform'].present?)
       end
     end
@@ -665,7 +691,8 @@ class FormSection < CouchRest::Model::Base
       if locale.present? && Primero::Application::locales.include?(locale)
         unique_id = form_hash.keys.first
         if unique_id.present?
-          form = self.get_by_unique_id(unique_id)
+          #We have to bypass memoization here
+          form = self.old_by_unique_id(key: unique_id).first
           if form.present?
             form.update_translations(form_hash.values.first, locale)
             Rails.logger.info "Updating Form translation: Form [#{form.unique_id}] locale [#{locale}]"
@@ -702,6 +729,12 @@ class FormSection < CouchRest::Model::Base
 
   def all_matchable_fields
     self.fields.select { |field| field.matchable.present? && field.matchable == true }
+  end
+
+  # Updates each field's matchable property to true/false depending on whether or not it is in the field_list
+  #Input:  a list of fields that should be matchable
+  def update_fields_matchable(field_list=[])
+    self.fields.each {|field| field.matchable = field_list.include?(field.name)}
   end
 
   def all_searchable_fields
@@ -867,6 +900,9 @@ class FormSection < CouchRest::Model::Base
       form_hash.each do |key, value|
         if key == 'fields'
           update_field_translations(value, locale)
+        elsif key == 'form_group_name'
+          #TODO: get rid of this case once we i18n form_group_name
+          self.form_group_name = value
         else
           self.send("#{key}_#{locale}=", value)
         end
@@ -949,12 +985,18 @@ class FormSection < CouchRest::Model::Base
       fields.each do |field|
         current_type = all_current_fields[field.name]
         if current_type.present? && (current_type != [field.type, field.multi_select.present?])
+          #Allow changing from text_field to textarea or from textarea to text_field
+          next if changing_between_text_field_and_textarea?(current_type.first, field.type)
           errors.add(:fields, I18n.t("errors.models.field.change_type_existing_field", field_name: field.name, form_name: self.name))
           return false
         end
       end
     end
     return true
+  end
+
+  def changing_between_text_field_and_textarea?(current_type, new_type)
+    [Field::TEXT_FIELD, Field::TEXT_AREA].include?(current_type) && [Field::TEXT_FIELD, Field::TEXT_AREA].include?(new_type)
   end
 
   def create_unique_id

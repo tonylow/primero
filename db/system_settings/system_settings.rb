@@ -13,7 +13,20 @@ def create_or_update_system_setting(setting_hash)
 end
 
 create_or_update_system_setting(
-  default_locale: "en",
+  default_locale: Primero::Application::LOCALE_ENGLISH,
+  locales: [Primero::Application::LOCALE_ENGLISH, Primero::Application::LOCALE_FRENCH, Primero::Application::LOCALE_ARABIC],
+  auto_populate_list: [
+    {
+      field_key: "name",
+      format: [
+        "name_first",
+        "name_middle",
+        "name_last"
+      ],
+      separator: " ",
+      auto_populated: true
+    }
+  ],
   reporting_location_config: {
     field_key: "owned_by_location",
     label_key: "district",
@@ -27,11 +40,16 @@ create_or_update_system_setting(
   show_alerts: true,
   approval_forms_to_alert: {
     "cp_bia_form" => "bia",
-    "services" => "case_plan",
+    "cp_case_plan" => "case_plan",
     "closure_form" => "closure"
   },
   due_date_from_appointment_date: false,
   notification_email_enabled: true,
   welcome_email_enabled: false,
-  welcome_email_text: "Click link below to log into Primero.  Please see your system administrator if you have any issues."
+  welcome_email_text: "Click link below to log into Primero.  Please see your system administrator if you have any issues.",
+  export_config_id: {
+    "unhcr" => "export-unhcr-csv",
+    "duplicate_id" => "export-duplicate-id-csv"
+  },
+  duplicate_export_field: "national_id_no"
 )

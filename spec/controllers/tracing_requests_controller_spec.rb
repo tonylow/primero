@@ -370,7 +370,7 @@ describe TracingRequestsController, :type => :controller do
         p_module = PrimeroModule.new(:id => "primeromodule-cp", :associated_record_types => ["tracing_request"])
         user = User.new(:user_name => 'fakeadmin', :is_manager => true)
         session = fake_admin_login user
-        user.should_receive(:modules).and_return([p_module])
+        user.should_receive(:modules).and_return([p_module], [p_module])
         user.should_receive(:has_module?).with(anything).and_return(true, true, true)
 
         get :index
@@ -383,7 +383,7 @@ describe TracingRequestsController, :type => :controller do
         p_module = PrimeroModule.new(:id => "primeromodule-cp", :associated_record_types => ["tracing_request"])
         user = User.new(:user_name => 'fakeadmin', :is_manager => false)
         session = fake_admin_login user
-        user.should_receive(:modules).and_return([p_module])
+        user.should_receive(:modules).and_return([p_module], [p_module])
         user.should_receive(:has_module?).with(anything).and_return(true, true, true)
 
         get :index
@@ -409,6 +409,8 @@ describe TracingRequestsController, :type => :controller do
       TracingRequest.stub(:allowed_formsections).and_return({})
       TracingRequest.stub(:get).with("37").and_return(mock_tracing_request({:module_id => 'primeromodule-cp'}))
       controller.stub :get_form_sections
+      allow(@mock_tracing_request).to receive(:display_id).and_return('37')
+      allow(@mock_tracing_request).to receive(:owned_by).and_return('test_owner')
       get :show, params: { :id => "37" }
       assigns[:tracing_request].should equal(mock_tracing_request)
     end
@@ -437,6 +439,8 @@ describe TracingRequestsController, :type => :controller do
       forms = [stub_form]
       grouped_forms = forms.group_by{|e| e.form_group_name}
       TracingRequest.stub(:allowed_formsections).and_return(grouped_forms)
+      allow(@mock_tracing_request).to receive(:display_id).and_return('37')
+      allow(@mock_tracing_request).to receive(:owned_by).and_return('test_owner')
       get :show, params: { :id => "37" }
       assigns[:form_sections].should == grouped_forms
     end
@@ -484,6 +488,8 @@ describe TracingRequestsController, :type => :controller do
       TracingRequest.stub(:allowed_formsections).and_return({})
       TracingRequest.stub(:get).with("37").and_return(mock_tracing_request)
       controller.stub :get_form_sections
+      allow(@mock_tracing_request).to receive(:display_id).and_return('37')
+      allow(@mock_tracing_request).to receive(:owned_by).and_return('test_owner')
       get :edit, params: { :id => "37" }
       assigns[:tracing_request].should equal(mock_tracing_request)
     end
@@ -493,6 +499,8 @@ describe TracingRequestsController, :type => :controller do
       forms = [stub_form]
       grouped_forms = forms.group_by{|e| e.form_group_name}
       TracingRequest.stub(:allowed_formsections).and_return(grouped_forms)
+      allow(@mock_tracing_request).to receive(:display_id).and_return('37')
+      allow(@mock_tracing_request).to receive(:owned_by).and_return('test_owner')
       get :edit, params: { :id => "37" }
       assigns[:form_sections].should == grouped_forms
     end
@@ -559,7 +567,7 @@ describe TracingRequestsController, :type => :controller do
       tracing_request = TracingRequest.new_with_user_name(user, {:relation_name => 'some name'})
       params_tracing_request = {"relation_name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_tracing_request)
+      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_tracing_request)
       TracingRequest.stub(:get).and_return(tracing_request)
       put :update, params: { :id => '1', :tracing_request => params_tracing_request }
     end
@@ -569,7 +577,7 @@ describe TracingRequestsController, :type => :controller do
       tracing_request = TracingRequest.new_with_user_name(user, {:relation_name => 'some name'})
       params_tracing_request = {"relation_name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, true, params_tracing_request)
+      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, true, params_tracing_request)
       TracingRequest.stub(:get).and_return(tracing_request)
       put :update, params: { :id => '1', :tracing_request => params_tracing_request, :delete_tracing_request_audio => "1" }
     end
@@ -579,7 +587,7 @@ describe TracingRequestsController, :type => :controller do
       tracing_request = TracingRequest.new_with_user_name(user, {:relation_name => 'some name'})
       params_tracing_request = {"relation_name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_tracing_request)
+      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_tracing_request)
       TracingRequest.stub(:get).and_return(tracing_request)
       put :update, params: { :id => '1', :tracing_request => params_tracing_request, :redirect_url => '/cases' }
       response.should redirect_to '/cases?follow=true'
@@ -591,7 +599,7 @@ describe TracingRequestsController, :type => :controller do
 
       params_tracing_request = {"relation_name" => 'update'}
       controller.stub(:current_user_name).and_return("user_name")
-      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", nil, nil, false, params_tracing_request)
+      tracing_request.should_receive(:update_properties_with_user_name).with("user_name", "", {}, nil, false, params_tracing_request)
       TracingRequest.stub(:get).and_return(tracing_request)
       put :update, params: { :id => '1', :tracing_request => params_tracing_request }
       response.should redirect_to "/tracing_requests/#{tracing_request.id}?follow=true"

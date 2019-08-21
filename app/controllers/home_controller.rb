@@ -1,8 +1,10 @@
 class HomeController < ApplicationController
   ALL_FILTER = "all"
 
-  before_action :load_system_settings, :only => [:index]
+  before_action :load_default_settings, :only => [:index]
   before_action :can_access_approvals, :only => [:index]
+  before_action :can_read_cases, :only => [:index]
+  before_action :can_read_incidents, :only => [:index]
   before_action :load_risk_levels, :only => [:index]
 
   def index
@@ -31,6 +33,7 @@ class HomeController < ApplicationController
 
       display_case_worker_dashboard?
       display_approvals?
+      display_response?
       display_assessment?
       display_service_provisions?
       display_cases_to_assign?
@@ -269,6 +272,10 @@ class HomeController < ApplicationController
     @display_approvals ||= can?(:view_approvals, Dashboard)
   end
 
+  def display_response?
+    @display_response ||= can?(:view_response, Dashboard)
+  end
+
   def display_assessment?
     @display_assessment ||= can?(:view_assessment, Dashboard)
   end
@@ -457,10 +464,10 @@ class HomeController < ApplicationController
       transfer_status: manager_case_query({ transfer_status: true }),
       transfer_awaiting: manager_case_query({ transfer_awaiting: true }),
       task_overdue: {
-        assessment: manager_case_query({ by_owner: true, assessment_overdue: true}),
-        case_plan: manager_case_query({ by_owner: true, case_plan_overdue: true}),
-        follow_up: manager_case_query({ by_owner: true, followup_overdue: true}),
-        services: manager_case_query({ by_owner: true, services_overdue: true})
+        assessment: manager_case_query({ by_owner: true, assessment_overdue: true, status: Record::STATUS_OPEN }),
+        case_plan: manager_case_query({ by_owner: true, case_plan_overdue: true, status: Record::STATUS_OPEN }),
+        follow_up: manager_case_query({ by_owner: true, followup_overdue: true, status: Record::STATUS_OPEN }),
+        services: manager_case_query({ by_owner: true, services_overdue: true, status: Record::STATUS_OPEN })
       }
     }
 
@@ -473,8 +480,7 @@ class HomeController < ApplicationController
     @record_types = @modules.map{|m| m.associated_record_types}.flatten.uniq
   end
 
-  def load_system_settings
-    @system_settings ||= SystemSettings.current
+  def load_default_settings
     if @system_settings.present? && @system_settings.reporting_location_config.present?
       @admin_level ||= @system_settings.reporting_location_config.admin_level || ReportingLocation::DEFAULT_ADMIN_LEVEL
       @reporting_location ||= @system_settings.reporting_location_config.field_key || ReportingLocation::DEFAULT_FIELD_KEY
@@ -491,6 +497,14 @@ class HomeController < ApplicationController
     @can_approval_case_plan = can?(:approve_case_plan, Child) || can?(:request_approval_case_plan, Child)
     @can_approval_closure = can?(:approve_closure, Child) || can?(:request_approval_closure, Child)
     @can_approvals = @can_approval_bia || @can_approval_case_plan || @can_approval_closure
+  end
+
+  def can_read_cases
+    @can_read_cases = can?(:index, Child)
+  end
+
+  def can_read_incidents
+    @can_read_incidents = can?(:index, Incident)
   end
 
   def load_recent_activities
