@@ -1,6 +1,7 @@
 Primero
 ========
 [![Build Status](https://api.travis-ci.org/primeroIMS/primero.svg?branch=development_v2)](https://travis-ci.org/primeroIMS/primero/branches)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftonylow%2Fprimero.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftonylow%2Fprimero?ref=badge_shield)
 
 
 ## Development
@@ -145,3 +146,7 @@ For more on making code contributions, have a look at the file [CONTRIBUTING.md]
 ## Production
 
 Primero is deployed in production using Docker. Detailed Docker instructions exist in the file [docker/README.md](docker/README.md)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ftonylow%2Fprimero.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ftonylow%2Fprimero?ref=badge_large)
