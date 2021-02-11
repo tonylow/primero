@@ -27,7 +27,7 @@ gem 'prawn-table',         '~> 0.2'    # PDF generation
 gem 'puma',                '~> 4.3'    # Ruby Rack server
 gem 'rack',                '>= 2.2.0'
 gem 'rack-attack',         '>= 6.3.1'  # Rack middleware to rate limit sensetive routes, such as those used for auth
-gem 'rails',               '5.2.4.4'
+gem 'rails', '6.0.3.5'
 gem 'rake',                '~> 12.3'
 gem 'rbnacl',              '>= 7.1.1'  # Libsodium Ruby binding. Used for encrypting export file passwords.
 gem 'rubyzip',             '~> 1.3.0', # Zip and encrypt exported files
@@ -37,7 +37,7 @@ gem 'rufus-scheduler',     '~> 3.4',   # Primero, Rails-context job cron-like sc
 gem 'spreadsheet',         '~> 1.1'    # Read XLS spreadsheets for imports (not XLSX!). TODO: Different gem? Reconsider?
 # Note: if upgrading Sunspot, update the corresponding version of Solr on the Docker image
 # Current Solr version is 5.3.1
-gem 'sunspot_rails',       '2.3.0'     # Rails ODM bindings to Solr
+gem 'sunspot_rails', '2.3.0' # Rails ODM bindings to Solr
 gem 'sunspot_solr',        '2.3.0'     # Ruby bindings to Solr
 gem 'twitter_cldr',        '~> 4.4'    # Localization for dates, money. TODO: Is this still used?
 gem 'tzinfo',              '~> 1.2'    # Security assertion on implicit dependency.
@@ -71,7 +71,7 @@ group :development, :test do
   gem 'rubocop-performance',        '~> 1.1'
   gem 'ruby-prof',                  '~> 0.17'
   gem 'simplecov',                  '~> 0.18'
-  gem 'sunspot_test',               '~> 0.4', require: false
+  gem 'sunspot_test', '~> 0.4', '>= 0.4.1', require: false
   # TODO: Latest version (1.2.5) of this conflicts with sunspot gem. Upgrade when we upgrade sunspot
 
   # TODO: This is needed to read .xlsx files for validation in the exporter tests.
