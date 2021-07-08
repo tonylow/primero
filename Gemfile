@@ -53,7 +53,7 @@ group :development, :test do
   gem 'foreman'
   gem 'i18n-tasks',                 '~> 0.9'
   gem 'json_spec',                  '~> 1.1'
-  gem 'letter_opener',              '~> 1.7'
+  gem 'letter_opener', '~> 1.7', '>= 1.7.0'
   gem 'listen',                     '~> 3.1'
   gem 'memory_profiler'
   gem 'pry'
