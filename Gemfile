@@ -71,7 +71,7 @@ group :development, :test do
   gem 'rubocop-performance',        '~> 1.1'
   gem 'ruby-prof',                  '~> 0.17'
   gem 'simplecov',                  '~> 0.18'
-  gem 'sunspot_test',               '~> 0.4', require: false
+  gem 'sunspot_test', '~> 0.4', '>= 0.4.1', require: false
   # TODO: Latest version (1.2.5) of this conflicts with sunspot gem. Upgrade when we upgrade sunspot
 
   # TODO: This is needed to read .xlsx files for validation in the exporter tests.
