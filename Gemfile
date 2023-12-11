@@ -63,7 +63,7 @@ group :development, :test do
   gem 'rack_session_access',        '~> 0.2'
   gem 'rails-controller-testing',   '~> 1.0'
   gem 'rspec',                      '~> 3.8'
-  gem 'rspec-activemodel-mocks',    '~> 1.1'
+  gem 'rspec-activemodel-mocks', '~> 1.2', '>= 1.2.0'
   gem 'rspec-collection_matchers',  '~> 1.1'
   gem 'rspec-instafail',            '~> 1.0'
   gem 'rspec-rails',                '~> 3.8'
