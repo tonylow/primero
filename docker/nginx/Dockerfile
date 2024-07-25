@@ -1,4 +1,4 @@
-FROM nginx:1.19.3-alpine
+FROM nginx:1.26.0-alpine
 EXPOSE 80 443
 
 ARG NGINX_UID
