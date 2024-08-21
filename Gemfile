@@ -32,7 +32,7 @@ gem 'rake',                '~> 12.3'
 gem 'rbnacl',              '>= 7.1.1'  # Libsodium Ruby binding. Used for encrypting export file passwords.
 gem 'rubyzip',             '~> 1.3.0', # Zip and encrypt exported files
     require: 'zip'
-gem 'rufus-scheduler',     '~> 3.4',   # Primero, Rails-context job cron-like scheduling.
+gem 'rufus-scheduler', '~> 3.6', '>= 3.6.0' # Primero, Rails-context job cron-like scheduling.
     require: false
 gem 'spreadsheet',         '~> 1.1'    # Read XLS spreadsheets for imports (not XLSX!). TODO: Different gem? Reconsider?
 # Note: if upgrading Sunspot, update the corresponding version of Solr on the Docker image
