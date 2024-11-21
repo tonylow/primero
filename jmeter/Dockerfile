@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:trusty-20190425
 MAINTAINER Ben Keith <ben.keith@quoininc.com>
 
 # This could be useful later if we ever dockerize the primero app.  With
