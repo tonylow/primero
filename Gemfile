@@ -49,7 +49,7 @@ group :development, :test do
   gem 'binding_of_caller',          '~> 0.8'
   gem 'bundler-audit',              '~> 0.6'
   gem 'ci_reporter',                '~> 2.0'
-  gem 'factory_bot',                '~> 5.0'
+  gem 'factory_bot', '~> 6.5', '>= 6.5.1'
   gem 'foreman'
   gem 'i18n-tasks',                 '~> 0.9'
   gem 'json_spec',                  '~> 1.1'
