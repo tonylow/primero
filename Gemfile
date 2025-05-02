@@ -66,7 +66,7 @@ group :development, :test do
   gem 'rspec-activemodel-mocks',    '~> 1.1'
   gem 'rspec-collection_matchers',  '~> 1.1'
   gem 'rspec-instafail',            '~> 1.0'
-  gem 'rspec-rails',                '~> 3.8'
+  gem 'rspec-rails', '~> 8.0', '>= 8.0.0'
   gem 'rubocop',                    '~> 0.67'
   gem 'rubocop-performance',        '~> 1.1'
   gem 'ruby-prof',                  '~> 0.17'
