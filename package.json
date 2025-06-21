@@ -176,6 +176,6 @@
     "printWidth": 120
   },
   "dependencies": {
-    "@welldone-software/why-did-you-render": "^5.0.0-alpha.1"
+    "@welldone-software/why-did-you-render": "^5.0.0"
   }
 }
