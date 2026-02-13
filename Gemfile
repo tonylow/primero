@@ -13,7 +13,7 @@ gem 'deep_merge',          '~> 1.2',   # Recursive merging of Hashes. Used for m
     require: 'deep_merge/rails_compat'
 gem 'devise',              '~> 4.7'    # Authentication framework
 gem 'devise-jwt',          '0.8.0'     # JWT authentication for native Primero users
-gem 'faraday',             '~> 0.17'   # Ruby HTTP client
+gem 'faraday', '~> 2.14', '>= 2.14.1' # Ruby HTTP client
 gem 'file_validators',     '~> 2.3'    # ActiveRecord extension for validating attachment file sizes
 gem 'i18n-js',             '~> 3.4'    # Shares Rails i18n strings with the front end
 gem 'jbuilder',            '~> 2.8'    # JSON templating for the API
@@ -37,7 +37,7 @@ gem 'rufus-scheduler',     '~> 3.4',   # Primero, Rails-context job cron-like sc
 gem 'spreadsheet',         '~> 1.1'    # Read XLS spreadsheets for imports (not XLSX!). TODO: Different gem? Reconsider?
 # Note: if upgrading Sunspot, update the corresponding version of Solr on the Docker image
 # Current Solr version is 5.3.1
-gem 'sunspot_rails',       '2.3.0'     # Rails ODM bindings to Solr
+gem 'sunspot_rails', '2.4.0' # Rails ODM bindings to Solr
 gem 'sunspot_solr',        '2.3.0'     # Ruby bindings to Solr
 gem 'twitter_cldr',        '~> 4.4'    # Localization for dates, money. TODO: Is this still used?
 gem 'tzinfo',              '~> 1.2'    # Security assertion on implicit dependency.
@@ -71,7 +71,7 @@ group :development, :test do
   gem 'rubocop-performance',        '~> 1.1'
   gem 'ruby-prof',                  '~> 0.17'
   gem 'simplecov',                  '~> 0.18'
-  gem 'sunspot_test',               '~> 0.4', require: false
+  gem 'sunspot_test', '~> 0.4', '>= 0.4.2', require: false
   # TODO: Latest version (1.2.5) of this conflicts with sunspot gem. Upgrade when we upgrade sunspot
 
   # TODO: This is needed to read .xlsx files for validation in the exporter tests.
